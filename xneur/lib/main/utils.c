@@ -173,23 +173,17 @@ void grab_all_keys(Window window, int is_grab)
 
 unsigned char *get_win_prop(Display *display, Window window, Atom atom, long *nitems, Atom *type, int *size)
 {
-	Atom actual_type;
-	int actual_format;
-	unsigned long _nitems;
 	unsigned long bytes_after; /* unused */
 	unsigned char *prop;
 	int status;
 
 	status = XGetWindowProperty(display, window, atom, 0, (~0L),
-                              FALSE, AnyPropertyType, &actual_type,
-                              &actual_format, &_nitems, &bytes_after,
+                              FALSE, AnyPropertyType, type,
+                              size, nitems, &bytes_after,
                               &prop);
 	if (status != Success)
 		return NULL;
 
-	*nitems = _nitems;
-	*type = actual_type;
-	*size = actual_format;
 	return prop;
 }
 
