@@ -47,10 +47,6 @@
 
 #include "log.h"
 
-#include "buffer.h"
-
-extern struct _window *main_window;
-
 struct _xneur_config *xconfig				= NULL;
 
 /*static int get_group(Display *dpy) {
@@ -467,47 +463,3 @@ void xneur_handle_destroy (struct _xneur_handle *handle)
 	free(handle);
 
 }
-
-int xneur_get_layout (struct _xneur_handle *handle, char *word)
-{
-	if (!word || handle == NULL)
-		return -1;
-	struct _buffer *buffer = buffer_init(handle, main_window->keymap);
-
-	buffer->set_content(buffer, handle, word);
-	int cur_lang = get_curr_keyboard_group();
-	int new_lang = check_lang(handle, buffer, cur_lang);
-
-	buffer->uninit(buffer, handle);
-
-	// The word is suitable for all languages, return -1
-	if (new_lang == NO_LANGUAGE)
-		new_lang = -1;
-
-	return new_lang;
-}
-
-char *xneur_get_word (struct _xneur_handle *handle, char *word)
-{
-	if (!word || handle == NULL)
-		return NULL;
-
-	char *result = NULL;
-
-	struct _buffer *buffer = buffer_init(handle, main_window->keymap);
-
-	buffer->set_content(buffer, handle, word);
-	int cur_lang = get_curr_keyboard_group();
-	int new_lang = check_lang(handle, buffer, cur_lang);
-	if (new_lang == NO_LANGUAGE)
-		result = strdup(word);
-	else
-		buffer->set_lang_mask(buffer, new_lang),
-		result = buffer->get_utf_string(buffer);
-
-	buffer->uninit(buffer, handle);
-
-	return result;
-}
-
-
