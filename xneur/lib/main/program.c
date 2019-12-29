@@ -3218,9 +3218,8 @@ struct _program* program_init(void)
 {
 	main_window = window_init(xconfig->handle);
 
-	if (!main_window->create(main_window)
-	 || (main_window->keymap = keymap_init(xconfig->handle, main_window->display)) == NULL
-	) {
+	if (main_window == NULL)
+	{
 		return NULL;
 	}
 

@@ -156,8 +156,11 @@ struct _window* window_init(struct _xneur_handle *handle)
 	p->handle = handle;
 
 	// Function mapping
-	p->create		= window_create;
 	p->uninit		= window_uninit;
 
+	if (!window_create(p) || !window_init_keymap(p)) {
+		free(p);
+		return NULL;
+	}
 	return p;
 }
