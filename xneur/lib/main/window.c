@@ -106,20 +106,14 @@ static int window_create(struct _window *p)
 	Atom type = 0;
 	long nitems = 0L;
 	int size = 0;
-	Atom *results = NULL;
-	long i = 0;
 
-	Window root;
-	Atom request;
-	Atom feature_atom;
-
-	request = XInternAtom(p->display, "_NET_SUPPORTED", False);
-	feature_atom = XInternAtom(p->display, "_NET_ACTIVE_WINDOW", False);
-	root = XDefaultRootWindow(p->display);
+	Atom request = XInternAtom(display, "_NET_SUPPORTED", False);
+	Atom feature_atom = XInternAtom(display, "_NET_ACTIVE_WINDOW", False);
+	Window root = XDefaultRootWindow(display);
 
 	p->_NET_SUPPORTED = FALSE;
-	results = (Atom *) get_win_prop(root, request, &nitems, &type, &size);
-	for (i = 0L; i < nitems; i++)
+	Atom *results = (Atom *) get_win_prop(display, root, request, &nitems, &type, &size);
+	for (long i = 0L; i < nitems; i++)
 	{
 		if (results[i] == feature_atom)
 			p->_NET_SUPPORTED = TRUE;
