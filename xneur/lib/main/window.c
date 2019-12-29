@@ -99,7 +99,7 @@ static int window_create(struct _window *p)
 
 	p->display 	= display;
 	p->window  	= window;
-	
+
 	p->internal_atom = XInternAtom(p->display, "XNEUR_INTERNAL_MSG", 0);
 
 	// Check "_NET_SUPPORTED" atom support
@@ -119,14 +119,14 @@ static int window_create(struct _window *p)
 
 	p->_NET_SUPPORTED = FALSE;
 	results = (Atom *) get_win_prop(root, request, &nitems, &type, &size);
-	for (i = 0L; i < nitems; i++) 
+	for (i = 0L; i < nitems; i++)
 	{
 		if (results[i] == feature_atom)
 			p->_NET_SUPPORTED = TRUE;
 	}
 	//if (results != NULL)
 		//free(results);
-	
+
 	log_message(LOG, _("Main window with id %d created"), window);
 
 	XSynchronize(display, TRUE);
@@ -162,8 +162,8 @@ static void window_uninit(struct _window *p)
 {
 	if (p->keymap != NULL)
 		p->keymap->uninit(p->keymap);
-	
-	p->destroy(p);
+
+	window_destroy(p);
 	free(p);
 
 	log_message(DEBUG, _("Window is freed"));
@@ -178,7 +178,6 @@ struct _window* window_init(struct _xneur_handle *handle)
 
 	// Function mapping
 	p->create		= window_create;
-	p->destroy		= window_destroy;
 	p->init_keymap		= window_init_keymap;
 	p->uninit_keymap	= window_uninit_keymap;
 	p->uninit		= window_uninit;
