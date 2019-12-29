@@ -57,8 +57,9 @@ static int window_create(struct _window *p)
 		return FALSE;
 	}
 
+	Window root = DefaultRootWindow(display);
 	// Create Main Window
-	Window window = XCreateSimpleWindow(display, DefaultRootWindow(display), 0, 0, 100, 100, 0, 0, 0);
+	Window window = XCreateSimpleWindow(display, root, 0, 0, 100, 100, 0, 0, 0);
 	if (!window)
 	{
 		log_message(ERROR, _("Can't create program window"));
@@ -70,7 +71,7 @@ static int window_create(struct _window *p)
 	XSetWindowAttributes attrs;
 	attrs.override_redirect = True;
 
-	Window flag_window = XCreateWindow(display, DefaultRootWindow(display), 0, 0, 1, 1,0, CopyFromParent, CopyFromParent, CopyFromParent, CWOverrideRedirect, &attrs);
+	Window flag_window = XCreateWindow(display, root, 0, 0, 1, 1,0, CopyFromParent, CopyFromParent, CopyFromParent, CWOverrideRedirect, &attrs);
 	if (!flag_window)
 	{
 		log_message(ERROR, _("Can't create flag window"));
@@ -109,7 +110,6 @@ static int window_create(struct _window *p)
 
 	Atom request = XInternAtom(display, "_NET_SUPPORTED", False);
 	Atom feature_atom = XInternAtom(display, "_NET_ACTIVE_WINDOW", False);
-	Window root = XDefaultRootWindow(display);
 
 	p->_NET_SUPPORTED = FALSE;
 	Atom *results = (Atom *) get_win_prop(display, root, request, &nitems, &type, &size);
@@ -155,12 +155,17 @@ struct _window* window_init(struct _xneur_handle *handle)
 
 	p->handle = handle;
 
-	// Function mapping
-	p->uninit		= window_uninit;
-
-	if (!window_create(p) || !window_init_keymap(p)) {
+	if (!window_create(p)) {
 		free(p);
 		return NULL;
 	}
+	p->keymap = keymap_init(handle, p->display);
+	if (p->keymap == NULL) {
+		free(p);
+		return NULL;
+	}
+	// Function mapping
+	p->uninit		= window_uninit;
+
 	return p;
 }
