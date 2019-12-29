@@ -3499,18 +3499,16 @@ static void program_uninit(struct _program *p)
 
 struct _program* program_init(void)
 {
-	struct _program *p = (struct _program*) malloc(sizeof(struct _program));
-	bzero(p, sizeof(struct _program));
-
 	main_window = window_init(xconfig->handle);
 
 	if (!main_window->create(main_window)
 	 || (main_window->keymap = keymap_init(xconfig->handle, main_window->display)) == NULL
 	) {
-		if (p != NULL)
-			free(p);
 		return NULL;
 	}
+
+	struct _program *p = (struct _program*) malloc(sizeof(struct _program));
+	bzero(p, sizeof(struct _program));
 
 	int event = 0;
 	int error = 0;
