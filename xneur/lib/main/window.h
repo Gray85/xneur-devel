@@ -38,8 +38,6 @@ struct _window
 	int _NET_SUPPORTED;
 
 	int  (*create) (struct _window *p);
-	int  (*init_keymap) (struct _window *p);
-	void (*uninit_keymap) (struct _window *p);
 	void (*uninit) (struct _window *p);
 };
 
