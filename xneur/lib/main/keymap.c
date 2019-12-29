@@ -59,22 +59,6 @@ struct keycode_to_symbol_pair
 static const int keyboard_groups[]	= {0x00000000, 0x00002000, 0x00004000, 0x00006000};
 static const int state_masks[]		= {0x00, 0x01, 0x80, 0x10}; // None, NumLock, Alt, Shift
 
-static int locale_create(void)
-{
-	char *locale = setlocale(LC_ALL, "");
-	if (locale == NULL)
-	{
-		log_message(ERROR, _("Couldn't set default locale"));
-		return FALSE;
-	}
-
-	if ((strstr(locale, "UTF") == NULL) && (strstr(locale, "utf") == NULL))
-		log_message(WARNING, _("Your default locale is not UTF-8"));
-
-	log_message(DEBUG, _("Using locale %s"), locale);
-	return TRUE;
-}
-
 int get_languages_mask(void)
 {
 	int languages_mask = 0;
@@ -517,11 +501,6 @@ static void keymap_uninit(struct _keymap *p)
 
 struct _keymap* keymap_init(struct _xneur_handle *handle, Display *display)
 {
-	if (!locale_create())
-	{
-		return NULL;
-	}
-
 	int min_keycode;
 	int max_keycode;
 	int keysyms_per_keycode;

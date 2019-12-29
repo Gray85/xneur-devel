@@ -426,6 +426,7 @@ static void program_process_input(struct _program *p)
 				xneur_handle_destroy(xconfig->handle);
 				xconfig->handle = xneur_handle_create();
 
+				//TODO: Early, keymap_init set locale to "", but now it doesn't do that. Maybe this was important... need check
 				main_window->keymap = keymap_init(xconfig->handle, main_window->display);
 				p->buffer = buffer_init(xconfig->handle, main_window->keymap);
 

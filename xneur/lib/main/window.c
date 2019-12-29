@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <strings.h>
+#include <locale.h>
 
 #include "utils.h"
 #include "defines.h"

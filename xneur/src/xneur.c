@@ -438,6 +438,22 @@ static void xneur_trap(int sig, sg_handler handler)
 	}
 }
 
+static int locale_create(void)
+{
+	char *locale = setlocale(LC_ALL, "");
+	if (locale == NULL)
+	{
+		log_message(ERROR, _("Couldn't set default locale"));
+		return FALSE;
+	}
+
+	if ((strstr(locale, "UTF") == NULL) && (strstr(locale, "utf") == NULL))
+		log_message(WARNING, _("Your default locale is not UTF-8"));
+
+	log_message(DEBUG, _("Using locale %s"), locale);
+	return TRUE;
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef ENABLE_NLS
@@ -446,6 +462,9 @@ int main(int argc, char *argv[])
 	bind_textdomain_codeset(PACKAGE, "UTF-8");
 	textdomain(PACKAGE);
 #endif
+	if (!locale_create()) {
+		exit(EXIT_FAILURE);
+	}
 	xneur_trap(SIGTERM, xneur_terminate);
 	xneur_trap(SIGINT, xneur_terminate);
 	xneur_trap(SIGHUP, xneur_reload);
