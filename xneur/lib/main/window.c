@@ -101,8 +101,6 @@ static int window_create(struct _window *p)
 	p->display 	= display;
 	p->window  	= window;
 
-	p->internal_atom = XInternAtom(p->display, "XNEUR_INTERNAL_MSG", 0);
-
 	// Check "_NET_SUPPORTED" atom support
 	Atom type = 0;
 	long nitems = 0L;
@@ -129,20 +127,12 @@ static int window_create(struct _window *p)
 	return TRUE;
 }
 
-static void window_destroy(struct _window *p)
-{
-	if (p->window == None)
-		return;
-
-	p->window	= None;
-}
 
 static void window_uninit(struct _window *p)
 {
 	if (p->keymap != NULL)
 		p->keymap->uninit(p->keymap);
 
-	window_destroy(p);
 	free(p);
 
 	log_message(DEBUG, _("Window is freed"));
@@ -152,8 +142,6 @@ struct _window* window_init(struct _xneur_handle *handle)
 {
 	struct _window *p = (struct _window *) malloc(sizeof(struct _window));
 	bzero(p, sizeof(struct _window));
-
-	p->handle = handle;
 
 	if (!window_create(p)) {
 		free(p);
@@ -165,7 +153,7 @@ struct _window* window_init(struct _xneur_handle *handle)
 		return NULL;
 	}
 	// Function mapping
-	p->uninit		= window_uninit;
+	p->uninit = window_uninit;
 
 	return p;
 }

@@ -26,14 +26,10 @@
 
 struct _window
 {
-	struct _xneur_handle *handle;
-
 	struct _keymap *keymap;
 
 	Display *display;
 	Window window;
-
-	Atom internal_atom;
 
 	int _NET_SUPPORTED;
 
