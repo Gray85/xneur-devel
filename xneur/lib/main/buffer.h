@@ -35,8 +35,6 @@ struct _buffer_content
 
 struct _buffer
 {
-	struct _xneur_handle *handle;
-
 	struct _buffer_content *i18n_content;
 
 	struct _keymap *keymap;
@@ -48,23 +46,23 @@ struct _buffer
 	int cur_size;		// Current size of content, keycode, keycodeModifiers fields
 	int cur_pos;		// Current filled size
 
-	void (*clear) (struct _buffer *p);
-	void (*save_and_clear) (struct _buffer *p, Window window);
+	void (*clear) (struct _buffer *p, struct _xneur_handle *handle);
+	void (*save_and_clear) (struct _buffer *p, struct _xneur_handle *handle, Window window);
 	void (*set_lang_mask) (struct _buffer *p, int group);
 	void (*set_uncaps_mask) (struct _buffer *p);
 	void (*set_caps_mask) (struct _buffer *p);
-	void (*set_content) (struct _buffer *p, const char *new_content);
+	void (*set_content) (struct _buffer *p, struct _xneur_handle *handle, const char *new_content);
 	void (*change_case) (struct _buffer *p);
-	void (*rotate_layout) (struct _buffer *p);
-	void (*add_symbol) (struct _buffer *p, char sym, KeyCode keycode, int modifier);
-	void (*del_symbol) (struct _buffer *p);
+	void (*rotate_layout) (struct _buffer *p, struct _xneur_handle *handle);
+	void (*add_symbol) (struct _buffer *p, struct _xneur_handle *handle, char sym, KeyCode keycode, int modifier);
+	void (*del_symbol) (struct _buffer *p, struct _xneur_handle *handle);
 	char*(*get_utf_string) (struct _buffer *p);
-	char*(*get_utf_string_on_kbd_group) (struct _buffer *p, int group);
+	char*(*get_utf_string_on_kbd_group) (struct _buffer *p, struct _xneur_handle *handle, int group);
 	void (*set_offset) (struct _buffer *p, int offset);
 	void (*unset_offset) (struct _buffer *p, int offset);
 	char*(*get_last_word) (struct _buffer *p, char *string);
 	int (*get_last_word_offset) (struct _buffer *p, const char *string, int string_len);
-	void (*uninit) (struct _buffer *p);
+	void (*uninit) (struct _buffer *p, struct _xneur_handle *handle);
 };
 
 struct _buffer* buffer_init(struct _xneur_handle *handle, struct _keymap *keymap);

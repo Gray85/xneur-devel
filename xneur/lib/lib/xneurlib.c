@@ -474,11 +474,11 @@ int xneur_get_layout (struct _xneur_handle *handle, char *word)
 		return -1;
 	struct _buffer *buffer = buffer_init(handle, main_window->keymap);
 
-	buffer->set_content(buffer, word);
+	buffer->set_content(buffer, handle, word);
 	int cur_lang = get_curr_keyboard_group();
 	int new_lang = check_lang(handle, buffer, cur_lang);
 
-	buffer->uninit(buffer);
+	buffer->uninit(buffer, handle);
 
 	// The word is suitable for all languages, return -1
 	if (new_lang == NO_LANGUAGE)
@@ -496,7 +496,7 @@ char *xneur_get_word (struct _xneur_handle *handle, char *word)
 
 	struct _buffer *buffer = buffer_init(handle, main_window->keymap);
 
-	buffer->set_content(buffer, word);
+	buffer->set_content(buffer, handle, word);
 	int cur_lang = get_curr_keyboard_group();
 	int new_lang = check_lang(handle, buffer, cur_lang);
 	if (new_lang == NO_LANGUAGE)
@@ -505,7 +505,7 @@ char *xneur_get_word (struct _xneur_handle *handle, char *word)
 		buffer->set_lang_mask(buffer, new_lang),
 		result = buffer->get_utf_string(buffer);
 
-	buffer->uninit(buffer);
+	buffer->uninit(buffer, handle);
 
 	return result;
 }

@@ -212,7 +212,7 @@ static void keymap_get_keysyms_by_string(struct _keymap *p, char *keyname, KeySy
 }
 
 // Private
-static char keymap_get_ascii_real(struct _keymap *p, const char *sym, int* preferred_lang, KeyCode *kc, int *modifier, size_t* symbol_len)
+static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handle, const char *sym, int* preferred_lang, KeyCode *kc, int *modifier, size_t* symbol_len)
 {
 	if (*sym == 10 || *sym == 13)
 	{
@@ -240,7 +240,7 @@ static char keymap_get_ascii_real(struct _keymap *p, const char *sym, int* prefe
 	if (preferred_lang)
 		_preferred_lang = *preferred_lang;
 
-	for (int _lang = 0; _lang < p->handle->total_languages; _lang++)
+	for (int _lang = 0; _lang < handle->total_languages; _lang++)
 	{
 		int lang = _lang;
 		if (lang == 0)
@@ -319,7 +319,7 @@ static char keymap_get_ascii_real(struct _keymap *p, const char *sym, int* prefe
 	return NULLSYM;
 }
 
-static char keymap_get_ascii(struct _keymap *p, const char *sym, int* preferred_lang, KeyCode *kc, int *modifier, size_t* symbol_len)
+static char keymap_get_ascii(struct _keymap *p, struct _xneur_handle *handle, const char *sym, int* preferred_lang, KeyCode *kc, int *modifier, size_t* symbol_len)
 {
 	struct symbol_to_keycode_pair *pr = NULL;
 
@@ -343,7 +343,7 @@ static char keymap_get_ascii(struct _keymap *p, const char *sym, int* preferred_
 	/* Miss */
 
 	int preferred_lang_result = _preferred_lang;
-	char ascii = keymap_get_ascii_real(p, sym, &preferred_lang_result, kc, modifier, &sym_size);
+	char ascii = keymap_get_ascii_real(p, handle, sym, &preferred_lang_result, kc, modifier, &sym_size);
 	if (!ascii)
 	{
 		return ascii; // Return empty
@@ -406,7 +406,7 @@ static char keymap_get_cur_ascii_char(struct _keymap *p, XEvent *e)
 	return ' ';
 }
 
-static void keymap_convert_text_to_ascii(struct _keymap *p, char *text, KeyCode *kc, int *kc_mod)
+static void keymap_convert_text_to_ascii(struct _keymap *p, struct _xneur_handle *handle, char *text, KeyCode *kc, int *kc_mod)
 {
 	int text_len = strlen(text);
 	int j = 0;
@@ -415,7 +415,7 @@ static void keymap_convert_text_to_ascii(struct _keymap *p, char *text, KeyCode 
 
 	for (int i = 0; i < text_len; i += symbol_len)
 	{
-		char new_symbol = p->get_ascii(p, &text[i], &preferred_lang, &kc[j], &kc_mod[j], &symbol_len);
+		char new_symbol = keymap_get_ascii(p, handle, &text[i], &preferred_lang, &kc[j], &kc_mod[j], &symbol_len);
 		if (new_symbol != NULLSYM && symbol_len > 0)
 			text[j++] = new_symbol;
 		else
@@ -517,7 +517,6 @@ struct _keymap* keymap_init(struct _xneur_handle *handle, Display *display)
 	struct _keymap *p = (struct _keymap *) malloc(sizeof(struct _keymap));
 	bzero(p, sizeof(struct _keymap));
 
-	p->handle = handle;
 	p->display = display;
 	p->keymap = keymap;
 	p->min_keycode = min_keycode;
@@ -531,15 +530,15 @@ struct _keymap* keymap_init(struct _xneur_handle *handle, Display *display)
 	p->symbol_to_keycode_cache_pos = 0;
 
 	get_offending_modifiers(p);
-	for (int i = 0; i < p->handle->total_languages; i++)
+	for (int i = 0; i < handle->total_languages; i++)
 	{
 		// FIXME Replace hardcode "us" to setting
-		if (p->handle->languages[i].dir != NULL)
+		if (handle->languages[i].dir != NULL)
 		{
-			if (strcmp(p->handle->languages[i].dir, "us") == 0)
+			if (strcmp(handle->languages[i].dir, "us") == 0)
 			{
 				p->latin_group = i;
-				//log_message(LOG, _("language dir %s"), p->handle->languages[i].dir);
+				//log_message(LOG, _("language dir %s"), handle->languages[i].dir);
 			}
 		}
 	}

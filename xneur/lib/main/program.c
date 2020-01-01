@@ -325,8 +325,8 @@ static void program_update(struct _program *p)
 
 	program_layout_update(p);
 
-	p->buffer->save_and_clear(p->buffer, p->last_window);
-	p->correction_buffer->clear(p->correction_buffer);
+	p->buffer->save_and_clear(p->buffer, xconfig->handle, p->last_window);
+	p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 	p->correction_action = ACTION_NONE;
 
 	if (status == FOCUS_NONE)
@@ -381,7 +381,7 @@ static void program_process_input(struct _program *p)
 					log_message(TRACE, _("Received Property Notify (layout switch event) (event type %d)"), type);
 
 					// Flush string
-					//p->buffer->clear(p->buffer);
+					//p->buffer->clear(p->buffer, xconfig->handle);
 				}
 				break;
 			}
@@ -416,8 +416,8 @@ static void program_process_input(struct _program *p)
 
 				log_message(TRACE, _("Received MappingNotify (event type %d)"), type);
 
-				p->buffer->uninit(p->buffer);
-				p->correction_buffer->uninit(p->correction_buffer);
+				p->buffer->uninit(p->buffer, xconfig->handle);
+				p->correction_buffer->uninit(p->correction_buffer, xconfig->handle);
 
 				if (main_window->keymap) {//TODO: may be check is unnecessary... but this need check
 					main_window->keymap->uninit(main_window->keymap);
@@ -566,8 +566,8 @@ static void program_process_input(struct _program *p)
 							// Clear buffer only when clicked left button
 							//if (xi_event->detail == 1)
 							//{
-							p->buffer->save_and_clear(p->buffer, p->focus->owner_window);
-							p->correction_buffer->clear(p->correction_buffer);
+							p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
+							p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 							p->correction_action = ACTION_NONE;
 							if ((Window)p->focus->get_focused_window(p->focus) != (Window)p->focus->owner_window)
 							{
@@ -719,7 +719,7 @@ static void program_process_selection_notify(struct _program *p)
 	if (p->action_mode == ACTION_TRANSLIT_SELECTED)
 		convert_text_to_translit(&event_text);
 
-	p->buffer->set_content(p->buffer, event_text);
+	p->buffer->set_content(p->buffer, xconfig->handle, event_text);
 	if (event_text != NULL)
 		free(event_text);
 
@@ -727,7 +727,7 @@ static void program_process_selection_notify(struct _program *p)
 	{
 		case ACTION_CHANGE_SELECTED:
 		{
-			p->buffer->rotate_layout(p->buffer);
+			p->buffer->rotate_layout(p->buffer, xconfig->handle);
 
 			if (xconfig->rotate_layout_after_convert)
 				set_next_keyboard_group(xconfig->handle);
@@ -737,7 +737,7 @@ static void program_process_selection_notify(struct _program *p)
 		}
 		case ACTION_CHANGE_CLIPBOARD:
 		{
-			p->buffer->rotate_layout(p->buffer);
+			p->buffer->rotate_layout(p->buffer, xconfig->handle);
 
 			show_notify(NOTIFY_CHANGE_CLIPBOARD, NULL);
 			break;
@@ -774,7 +774,7 @@ static void program_process_selection_notify(struct _program *p)
 		}
 		case ACTION_PREVIEW_CHANGE_SELECTED:
 		{
-			p->buffer->rotate_layout(p->buffer);
+			p->buffer->rotate_layout(p->buffer, xconfig->handle);
 
 			char *string = p->buffer->get_utf_string(p->buffer);
 			show_notify(NOTIFY_PREVIEW_CHANGE_SELECTED, string);
@@ -784,7 +784,7 @@ static void program_process_selection_notify(struct _program *p)
 		}
 		case ACTION_PREVIEW_CHANGE_CLIPBOARD:
 		{
-			p->buffer->rotate_layout(p->buffer);
+			p->buffer->rotate_layout(p->buffer, xconfig->handle);
 
 			char *string = p->buffer->get_utf_string(p->buffer);
 			show_notify(NOTIFY_PREVIEW_CHANGE_CLIPBOARD, string);
@@ -804,7 +804,7 @@ static void program_process_selection_notify(struct _program *p)
 			p->event->send_selection(p->event, p->buffer->cur_pos);
 	}
 
-	p->buffer->save_and_clear(p->buffer, p->focus->owner_window);
+	p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
 
 	p->action_mode = ACTION_NONE;
 }
@@ -952,15 +952,15 @@ static void program_perform_auto_action(struct _program *p, int action)
 			if (xconfig->flush_buffer_when_press_escape)
 				if (p->event->get_cur_keysym(p->event) == XK_Escape)
 				{
-					p->buffer->save_and_clear(p->buffer, p->focus->owner_window);
-					p->correction_buffer->clear(p->correction_buffer);
+					p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
+					p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 				}
 			return;
 		}
 		case KLB_CLEAR:
 		{
-			p->buffer->save_and_clear(p->buffer, p->focus->owner_window);
-			p->correction_buffer->clear(p->correction_buffer);
+			p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
+			p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 			return;
 		}
 		case KLB_DEL_SYM:
@@ -971,8 +971,8 @@ static void program_perform_auto_action(struct _program *p, int action)
 				p->last_action = ACTION_NONE;
 			}
 
-			string->del_symbol(string);
-			p->correction_buffer->del_symbol(p->correction_buffer);
+			string->del_symbol(string, xconfig->handle);
+			p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
 			return;
 		}
 		case KLB_ENTER:
@@ -982,8 +982,8 @@ static void program_perform_auto_action(struct _program *p, int action)
 		{
 			if (((action == KLB_ENTER) || (action == KLB_TAB))&& xconfig->flush_buffer_when_press_enter)
 			{
-				p->buffer->save_and_clear(p->buffer, p->focus->owner_window);
-				p->correction_buffer->clear(p->correction_buffer);
+				p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
+				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 			}
 			if (((action == KLB_ENTER && xconfig->troubleshoot_enter) || (action == KLB_TAB && xconfig->troubleshoot_tab)) &&
 			     !xconfig->flush_buffer_when_press_enter)
@@ -1003,8 +1003,8 @@ static void program_perform_auto_action(struct _program *p, int action)
 
 				// Add symbol to internal bufer
 				int modifier_mask = groups[get_curr_keyboard_group()] | p->event->get_cur_modifiers(p->event);
-				p->buffer->add_symbol(p->buffer, sym, p->event->event.xkey.keycode, modifier_mask);
-				p->correction_buffer->add_symbol(p->correction_buffer, sym, p->event->event.xkey.keycode, modifier_mask);
+				p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
+				p->correction_buffer->add_symbol(p->correction_buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 
 				// Correct space before punctuation
 				program_check_space_before_punctuation(p);
@@ -1072,8 +1072,8 @@ static void program_perform_auto_action(struct _program *p, int action)
 			// Add symbol to internal bufer
 			p->event->event = p->event->default_event;
 			int modifier_mask = groups[get_curr_keyboard_group()] | p->event->get_cur_modifiers(p->event);
-			p->buffer->add_symbol(p->buffer, sym, p->event->event.xkey.keycode, modifier_mask);
-			p->correction_buffer->add_symbol(p->correction_buffer, sym, p->event->event.xkey.keycode, modifier_mask);
+			p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
+			p->correction_buffer->add_symbol(p->correction_buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 
 			//p->check_space_with_punctuation_mark(p);
 
@@ -1306,8 +1306,8 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 					p->event->send_xkey(p->event, XKeysymToKeycode(main_window->display, XK_space), p->event->event.xkey.state);
 				p->last_action = ACTION_NONE;
 
-				p->buffer->save_and_clear(p->buffer, p->focus->owner_window);
-				p->correction_buffer->clear(p->correction_buffer);
+				p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
+				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 
 				break;
 			}
@@ -1317,7 +1317,7 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 			p->event->event = p->event->default_event;
 			char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 			int modifier_mask =  p->event->get_cur_modifiers(p->event);
-			p->buffer->add_symbol(p->buffer, sym, p->event->event.xkey.keycode, modifier_mask);
+			p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 
 			break;
 		}
@@ -1335,7 +1335,7 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 			p->event->event = p->event->default_event;
 			char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 			int modifier_mask =  p->event->get_cur_modifiers(p->event);
-			p->buffer->add_symbol(p->buffer, sym, p->event->event.xkey.keycode, modifier_mask);
+			p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 
 			break;
 		}
@@ -1354,12 +1354,12 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 			// Insert Date
 			log_message(DEBUG, _("Insert date '%s'."), date);
 
-			p->buffer->set_content(p->buffer, date);
+			p->buffer->set_content(p->buffer, xconfig->handle, date);
 
 			program_change_word(p, CHANGE_INS_DATE);
 
-			p->buffer->save_and_clear(p->buffer, p->focus->owner_window);
-			p->correction_buffer->clear(p->correction_buffer);
+			p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
+			p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 
 			p->event->default_event.xkey.keycode = 0;
 
@@ -1399,7 +1399,7 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 				{
 					KeyCode *dummy_kc = malloc((strlen(replacement)+1) * sizeof(KeyCode));
 					int *dummy_kc_mod = malloc((strlen(replacement)+1) * sizeof(int));
-					main_window->keymap->convert_text_to_ascii(main_window->keymap, replacement, dummy_kc, dummy_kc_mod);
+					main_window->keymap->convert_text_to_ascii(main_window->keymap, xconfig->handle, replacement, dummy_kc, dummy_kc_mod);
 					if (dummy_kc != NULL)
 						free(dummy_kc);
 					if (dummy_kc_mod != NULL)
@@ -1407,7 +1407,7 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 
 					dummy_kc = malloc((strlen(word)+1) * sizeof(KeyCode));
 					dummy_kc_mod = malloc((strlen(word)+1) * sizeof(int));
-					main_window->keymap->convert_text_to_ascii(main_window->keymap, word, dummy_kc, dummy_kc_mod);
+					main_window->keymap->convert_text_to_ascii(main_window->keymap, xconfig->handle, word, dummy_kc, dummy_kc_mod);
 					if (dummy_kc != NULL)
 						free(dummy_kc);
 					if (dummy_kc_mod != NULL)
@@ -1427,13 +1427,13 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 				if (p->last_action == ACTION_AUTOCOMPLETION)
 					backspaces_count++;
 				p->event->send_backspaces(p->event, backspaces_count);
-				p->buffer->set_content(p->buffer, string);
+				p->buffer->set_content(p->buffer, xconfig->handle, string);
 
 				program_change_word(p, CHANGE_ABBREVIATION);
 
 				show_notify(NOTIFY_REPLACE_ABBREVIATION, NULL);
-				p->buffer->save_and_clear(p->buffer, p->focus->owner_window);
-				p->correction_buffer->clear(p->correction_buffer);
+				p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
+				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 
 				//Incapsulate to p->event->clear_code() or smth else
 				p->event->default_event.xkey.keycode = 0;
@@ -1587,7 +1587,7 @@ static void program_check_caps_last_word(struct _program *p)
 			return;
 	}
 
-	p->correction_buffer->set_content(p->correction_buffer, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1625,7 +1625,7 @@ static void program_check_tcl_last_word(struct _program *p)
 			return;
 	}
 
-	p->correction_buffer->set_content(p->correction_buffer, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1669,7 +1669,7 @@ static void program_check_two_space(struct _program *p)
 
 	free(word);
 
-	p->correction_buffer->set_content(p->correction_buffer, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1692,7 +1692,7 @@ static void program_check_two_minus(struct _program *p)
 
 	log_message (DEBUG, _("Find two minus, correction with a dash..."));
 
-	p->correction_buffer->set_content(p->correction_buffer, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1723,7 +1723,7 @@ static void program_check_copyright(struct _program *p)
 
 	log_message (DEBUG, _("Find (c), correction with a copyright sign..."));
 
-	p->correction_buffer->set_content(p->correction_buffer, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1745,7 +1745,7 @@ static void program_check_registered(struct _program *p)
 
 	log_message (DEBUG, _("Find (r), correction with a registered sign..."));
 
-	p->correction_buffer->set_content(p->correction_buffer, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1768,7 +1768,7 @@ static void program_check_trademark(struct _program *p)
 
 	log_message (DEBUG, _("Find (tm), correction with a trademark sign..."));
 
-	p->correction_buffer->set_content(p->correction_buffer, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1802,7 +1802,7 @@ static void program_check_ellipsis(struct _program *p)
 
 	log_message (DEBUG, _("Find three points, correction with a ellipsis sign..."));
 
-	p->correction_buffer->set_content(p->correction_buffer, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1844,19 +1844,19 @@ static void program_check_space_before_punctuation(struct _program *p)
 
 	log_message(DEBUG, _("Find spaces before punctuation, correction..."));
 
-	p->buffer->del_symbol(p->buffer);
-	p->correction_buffer->del_symbol(p->correction_buffer);
+	p->buffer->del_symbol(p->buffer, xconfig->handle);
+	p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
 	while (p->buffer->content[p->buffer->cur_pos-1] == ' ')
 	{
 		p->event->send_backspaces(p->event, 1);
-		p->buffer->del_symbol(p->buffer);
-		p->correction_buffer->del_symbol(p->correction_buffer);
+		p->buffer->del_symbol(p->buffer, xconfig->handle);
+		p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
 	}
 
 	p->event->event = p->event->default_event;
 	char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 	int modifier_mask = groups[get_curr_keyboard_group()] | p->event->get_cur_modifiers(p->event);
-	p->buffer->add_symbol(p->buffer, sym, p->event->event.xkey.keycode, modifier_mask);
+	p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 
 	free(text);
 }
@@ -1894,36 +1894,36 @@ static void program_check_space_with_bracket(struct _program *p)
 	{
 		log_message(DEBUG, _("Find no space before left bracket, correction..."));
 
-		p->buffer->del_symbol(p->buffer);
-		p->correction_buffer->del_symbol(p->correction_buffer);
+		p->buffer->del_symbol(p->buffer, xconfig->handle);
+		p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
 		p->event->event = p->event->default_event;
 		p->event->event.xkey.keycode = XKeysymToKeycode(main_window->display, XK_space);
 		p->event->send_next_event(p->event);
 		int modifier_mask = groups[get_curr_keyboard_group()];
-		p->buffer->add_symbol(p->buffer, ' ', p->event->event.xkey.keycode, modifier_mask);
+		p->buffer->add_symbol(p->buffer, xconfig->handle, ' ', p->event->event.xkey.keycode, modifier_mask);
 
 		p->event->event = p->event->default_event;
 		char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 		modifier_mask |=  p->event->get_cur_modifiers(p->event);
-		p->buffer->add_symbol(p->buffer, sym, p->event->event.xkey.keycode, modifier_mask);
+		p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 	}
 
 	if (text[text_len - 1] == ')')
 	{
 		log_message(DEBUG, _("Find spaces before right bracket, correction..."));
 
-		p->buffer->del_symbol(p->buffer);
-		p->correction_buffer->del_symbol(p->correction_buffer);
+		p->buffer->del_symbol(p->buffer, xconfig->handle);
+		p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
 		while (p->buffer->content[p->buffer->cur_pos - 1] == ' ')
 		{
 			p->event->send_backspaces(p->event, 1);
-			p->buffer->del_symbol(p->buffer);
-			p->correction_buffer->del_symbol(p->correction_buffer);
+			p->buffer->del_symbol(p->buffer, xconfig->handle);
+			p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
 		}
 		p->event->event = p->event->default_event;
 		char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 		int modifier_mask = groups[get_curr_keyboard_group()] | p->event->get_cur_modifiers(p->event);
-		p->buffer->add_symbol(p->buffer, sym, p->event->event.xkey.keycode, modifier_mask);
+		p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 	}
 
 	free(text);
@@ -1956,18 +1956,18 @@ static void program_check_brackets_with_symbols(struct _program *p)
 		}
 		log_message(DEBUG, _("Find no spaces after right bracket, correction..."));
 
-		p->buffer->del_symbol(p->buffer);
-		p->correction_buffer->del_symbol(p->correction_buffer);
+		p->buffer->del_symbol(p->buffer, xconfig->handle);
+		p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
 		p->event->event = p->event->default_event;
 		p->event->event.xkey.keycode = XKeysymToKeycode(main_window->display, XK_space);
 		p->event->send_next_event(p->event);
 		int modifier_mask = groups[get_curr_keyboard_group()];
-		p->buffer->add_symbol(p->buffer, ' ', p->event->event.xkey.keycode, modifier_mask);
+		p->buffer->add_symbol(p->buffer, xconfig->handle, ' ', p->event->event.xkey.keycode, modifier_mask);
 
 		p->event->event = p->event->default_event;
 		sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 		modifier_mask = groups[get_curr_keyboard_group()] | p->event->get_cur_modifiers(p->event);
-		p->buffer->add_symbol(p->buffer, sym, p->event->event.xkey.keycode, modifier_mask);
+		p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 	}
 
 	if (text[text_len - 2] != ' ')
@@ -1992,18 +1992,18 @@ static void program_check_brackets_with_symbols(struct _program *p)
 
 	log_message(DEBUG, _("Find spaces after left bracket, correction..."));
 
-	p->buffer->del_symbol(p->buffer);
-	p->correction_buffer->del_symbol(p->correction_buffer);
+	p->buffer->del_symbol(p->buffer, xconfig->handle);
+	p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
 	for (int i = 0; i < space_count; i++)
 	{
 		p->event->send_backspaces(p->event, 1);
-		p->buffer->del_symbol(p->buffer);
-		p->correction_buffer->del_symbol(p->correction_buffer);
+		p->buffer->del_symbol(p->buffer, xconfig->handle);
+		p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
 	}
 	p->event->event = p->event->default_event;
 	char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 	int modifier_mask = groups[get_curr_keyboard_group()] | p->event->get_cur_modifiers(p->event);
-	p->buffer->add_symbol(p->buffer, sym, p->event->event.xkey.keycode, modifier_mask);
+	p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 
 	free(text);
 }
@@ -2065,7 +2065,7 @@ static void program_check_capital_letter_after_dot(struct _program *p)
 	}
 	free (text);
 
-	text = p->buffer->get_utf_string_on_kbd_group(p->buffer, get_curr_keyboard_group());
+	text = p->buffer->get_utf_string_on_kbd_group(p->buffer, xconfig->handle, get_curr_keyboard_group());
 	if (text == NULL)
 		return;
 
@@ -2148,11 +2148,11 @@ static void program_check_pattern(struct _program *p)
 
 	struct _buffer *tmp_buffer = buffer_init(xconfig->handle, main_window->keymap);
 
-	tmp_buffer->set_content(tmp_buffer, pattern_data->string + strlen(word)*sizeof(char));
+	tmp_buffer->set_content(tmp_buffer, xconfig->handle, pattern_data->string + strlen(word)*sizeof(char));
 
 	if (tmp_buffer->cur_pos == 0)
 	{
-		tmp_buffer->uninit(tmp_buffer);
+		tmp_buffer->uninit(tmp_buffer, xconfig->handle);
 		p->last_action = ACTION_NONE;
 		free (word);
 		return;
@@ -2166,7 +2166,7 @@ static void program_check_pattern(struct _program *p)
 
 	p->event->default_event.xkey.keycode = 0;
 
-	tmp_buffer->uninit(tmp_buffer);
+	tmp_buffer->uninit(tmp_buffer, xconfig->handle);
 
 	p->last_action = ACTION_AUTOCOMPLETION;
 	p->last_pattern_id = 0;
@@ -2234,12 +2234,12 @@ static void program_rotate_pattern(struct _program *p)
 
 	struct _buffer *tmp_buffer = buffer_init(xconfig->handle, main_window->keymap);
 
-	tmp_buffer->set_content(tmp_buffer, list_alike->data[p->last_pattern_id].string + strlen(word)*sizeof(char));
+	tmp_buffer->set_content(tmp_buffer, xconfig->handle, list_alike->data[p->last_pattern_id].string + strlen(word)*sizeof(char));
 
 	if (tmp_buffer->cur_pos == 0)
 	{
 		list_alike->uninit(list_alike);
-		tmp_buffer->uninit(tmp_buffer);
+		tmp_buffer->uninit(tmp_buffer, xconfig->handle);
 		p->last_action = ACTION_NONE;
 		free (word);
 		return;
@@ -2253,7 +2253,7 @@ static void program_rotate_pattern(struct _program *p)
 
 	p->event->default_event.xkey.keycode = 0;
 
-	tmp_buffer->uninit(tmp_buffer);
+	tmp_buffer->uninit(tmp_buffer, xconfig->handle);
 
 	p->last_action = ACTION_AUTOCOMPLETION;
 
@@ -2423,7 +2423,7 @@ static void program_check_misprint(struct _program *p)
 
 		log_message (DEBUG, _("Found a misprint , correction '%s' to '%s'..."), word+offset, possible_word);
 
-		p->correction_buffer->set_content(p->correction_buffer, p->buffer->content);
+		p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
 
 		int backspaces_count = p->buffer->cur_pos - p->buffer->get_last_word_offset (p->buffer, p->buffer->content, p->buffer->cur_pos) - offset;
 		p->event->send_backspaces(p->event, backspaces_count);
@@ -2431,7 +2431,7 @@ static void program_check_misprint(struct _program *p)
 		if (p->last_action == ACTION_AUTOCOMPLETION)
 			p->event->send_backspaces(p->event, 1);
 		for (int i = 0; i < (backspaces_count); i++)
-			p->buffer->del_symbol(p->buffer);
+			p->buffer->del_symbol(p->buffer, xconfig->handle);
 
 		int new_offset = p->buffer->cur_pos;
 		int possible_word_len = strlen(possible_word);
@@ -2456,7 +2456,7 @@ static void program_check_misprint(struct _program *p)
 		new_content = strcat(new_content, p->correction_buffer->i18n_content[lang].content_unchanged + strlen(p->correction_buffer->i18n_content[lang].content_unchanged) - finish_offset + 1);
 		// <<<
 
-		p->buffer->set_content(p->buffer, new_content);
+		p->buffer->set_content(p->buffer, xconfig->handle, new_content);
 		free(new_content);
 
 		p->buffer->set_offset(p->buffer, new_offset);
@@ -2473,7 +2473,7 @@ static void program_check_misprint(struct _program *p)
 			free(notify_text);
 
 		p->correction_action = CORRECTION_MISPRINT;
-		//p->buffer->save_and_clear(p->buffer, p->focus->owner_window);
+		//p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
 
 		free(possible_word);
 	}
@@ -2533,14 +2533,14 @@ static void correct_word(struct _program *p, KeySym keysym, int keycount, enum _
 		XFlush(main_window->display);
 		XSync(main_window->display, TRUE);
 
-		p->buffer->clear(p->buffer);
+		p->buffer->clear(p->buffer, xconfig->handle);
 		p->event->default_event.xkey.keycode = 0;
 	} else
 	if (p->correction_action == action)
 	{
 		p->event->send_spaces(p->event, keycount);
 
-		p->buffer->set_content(p->buffer, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
+		p->buffer->set_content(p->buffer, xconfig->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
 		p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
 
 		int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
@@ -2553,7 +2553,7 @@ static void correct_word(struct _program *p, KeySym keysym, int keycount, enum _
 		// Revert fields back
 		p->buffer->unset_offset(p->buffer, offset);
 
-		p->correction_buffer->clear(p->correction_buffer);
+		p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 		p->correction_action = CORRECTION_NONE;
 	}
 }
@@ -2579,7 +2579,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			}
 			else if (p->correction_action == CORRECTION_INCIDENTAL_CAPS)
 			{
-				p->buffer->set_content(p->buffer, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
+				p->buffer->set_content(p->buffer, xconfig->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
 				p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
 
 				int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
@@ -2594,7 +2594,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				// Revert fields back
 				p->buffer->unset_offset(p->buffer, offset);
 
-				p->correction_buffer->clear(p->correction_buffer);
+				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 				p->correction_action = CORRECTION_NONE;
 			}
 
@@ -2618,7 +2618,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			}
 			else if (p->correction_action == CORRECTION_TWO_CAPITAL_LETTER)
 			{
-				p->buffer->set_content(p->buffer, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
+				p->buffer->set_content(p->buffer, xconfig->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
 				p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
 
 				int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
@@ -2633,7 +2633,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				// Revert fields back
 				p->buffer->unset_offset(p->buffer, offset);
 
-				p->correction_buffer->clear(p->correction_buffer);
+				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 				p->correction_action = CORRECTION_NONE;
 			}
 			break;
@@ -2643,32 +2643,32 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			if (p->correction_action == CORRECTION_NONE)
 			{
 				p->event->send_backspaces(p->event, 1);
-				p->buffer->del_symbol(p->buffer);
+				p->buffer->del_symbol(p->buffer, xconfig->handle);
 
 				KeyCode kc = 0;
 				int modifier = 0;
 				size_t sym_size = strlen(",");
 				int lang = get_curr_keyboard_group ();
-				p->buffer->keymap->get_ascii(p->buffer->keymap, ",", &lang, &kc, &modifier, &sym_size);
+				p->buffer->keymap->get_ascii(p->buffer->keymap, xconfig->handle, ",", &lang, &kc, &modifier, &sym_size);
 				p->event->send_xkey(p->event, kc, modifier);
-				p->buffer->add_symbol(p->buffer, ',', kc, modifier);
+				p->buffer->add_symbol(p->buffer, xconfig->handle, ',', kc, modifier);
 			}
 			else if (p->correction_action == CORRECTION_TWO_SPACE)
 			{
 				p->event->send_backspaces(p->event, 2);
-				p->buffer->del_symbol(p->buffer);
-				p->buffer->del_symbol(p->buffer);
+				p->buffer->del_symbol(p->buffer, xconfig->handle);
+				p->buffer->del_symbol(p->buffer, xconfig->handle);
 
 				p->event->send_spaces (p->event, 2);
 				KeyCode kc = 0;
 				int modifier = 0;
 				size_t sym_size = strlen(",");
 				int lang = get_curr_keyboard_group ();
-				p->buffer->keymap->get_ascii(p->buffer->keymap, " ", &lang, &kc, &modifier, &sym_size);
-				p->buffer->add_symbol(p->buffer, ' ', kc, modifier);
-				p->buffer->add_symbol(p->buffer, ' ', kc, modifier);
+				p->buffer->keymap->get_ascii(p->buffer->keymap, xconfig->handle, " ", &lang, &kc, &modifier, &sym_size);
+				p->buffer->add_symbol(p->buffer, xconfig->handle, ' ', kc, modifier);
+				p->buffer->add_symbol(p->buffer, xconfig->handle, ' ', kc, modifier);
 
-				p->correction_buffer->clear(p->correction_buffer);
+				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 				p->correction_action = CORRECTION_NONE;
 			}
 			break;
@@ -2707,20 +2707,20 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				XFlush(main_window->display);
 				XSync(main_window->display, TRUE);
 
-				p->buffer->clear(p->buffer);
+				p->buffer->clear(p->buffer, xconfig->handle);
 			}
 			else if (p->correction_action == CORRECTION_TWO_MINUS)
 			{
 				p->event->send_backspaces(p->event, 2);
 
-				p->buffer->set_content(p->buffer, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
+				p->buffer->set_content(p->buffer, xconfig->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
 				p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
 
 				KeyCode kc = 0;
 				int modifier = 0;
 				size_t sym_size = strlen("-");
 				int lang = get_curr_keyboard_group ();
-				p->buffer->keymap->get_ascii(p->buffer->keymap, "-", &lang, &kc, &modifier, &sym_size);
+				p->buffer->keymap->get_ascii(p->buffer->keymap, xconfig->handle, "-", &lang, &kc, &modifier, &sym_size);
 				p->event->send_xkey(p->event, kc, modifier);
 				p->event->send_xkey(p->event, kc, modifier);
 
@@ -2729,9 +2729,9 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				kc = 0;
 				modifier = 0;
 				sym_size = strlen(" ");
-				p->buffer->keymap->get_ascii(p->buffer->keymap, " ", &lang, &kc, &modifier, &sym_size);
+				p->buffer->keymap->get_ascii(p->buffer->keymap, xconfig->handle, " ", &lang, &kc, &modifier, &sym_size);
 
-				p->correction_buffer->clear(p->correction_buffer);
+				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 				p->correction_action = CORRECTION_NONE;
 			}
 			break;
@@ -2788,7 +2788,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			p->buffer->unset_offset(p->buffer, offset);
 
 			convert_text_to_translit(&text);
-			p->buffer->set_content(p->buffer, text);
+			p->buffer->set_content(p->buffer, xconfig->handle, text);
 
 			if (text != NULL)
 				free(text);
@@ -2832,7 +2832,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			// Shift fields to point to begin of word
 			p->buffer->set_offset(p->buffer, offset);
 
-			p->buffer->rotate_layout(p->buffer);
+			p->buffer->rotate_layout(p->buffer, xconfig->handle);
 
 			char *string = p->buffer->get_utf_string(p->buffer);
 			show_notify(NOTIFY_MANUAL_PREVIEW_CHANGE_WORD, string);
@@ -2892,7 +2892,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				int backspaces_count = p->buffer->cur_pos - p->correction_buffer->get_last_word_offset(p->correction_buffer, p->correction_buffer->content, p->correction_buffer->cur_pos);
 				int offset = p->buffer->cur_pos - p->correction_buffer->cur_pos;
 
-				p->buffer->set_content(p->buffer, p->correction_buffer->content);
+				p->buffer->set_content(p->buffer, xconfig->handle, p->correction_buffer->content);
 				p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
 
 				int cur_pos = p->buffer->cur_pos - backspaces_count + offset;
@@ -2901,7 +2901,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				program_send_string_silent(p, backspaces_count);
 				p->buffer->unset_offset(p->buffer, cur_pos);
 
-				p->correction_buffer->clear(p->correction_buffer);
+				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
 
 				if (xconfig->educate)
 					program_add_word_to_dict(p, get_curr_keyboard_group());
@@ -3204,8 +3204,8 @@ static void program_uninit(struct _program *p)
 
 	p->focus->uninit(p->focus);
 	p->event->uninit(p->event);
-	p->buffer->uninit(p->buffer);
-	p->correction_buffer->uninit(p->correction_buffer);
+	p->buffer->uninit(p->buffer, xconfig->handle);
+	p->correction_buffer->uninit(p->correction_buffer, xconfig->handle);
 	p->plugin->uninit(p->plugin);
 
 	main_window->uninit(main_window);

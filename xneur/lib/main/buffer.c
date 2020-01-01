@@ -330,7 +330,7 @@ static void buffer_save(struct _buffer *p, char *file_name, Window window)
 	fclose(stream);
 }
 
-static void buffer_clear(struct _buffer *p)
+static void buffer_clear(struct _buffer *p, struct _xneur_handle *handle)
 {
 	for (int i = 0; i < p->cur_pos; i++)
 	{
@@ -341,7 +341,7 @@ static void buffer_clear(struct _buffer *p)
 	p->cur_pos = 0;
 	p->content[0] = NULLSYM;
 
-	for (int i=0; i<p->handle->total_languages; i++)
+	for (int i = 0; i < handle->total_languages; i++)
 	{
 		char *tmp = realloc(p->i18n_content[i].content, sizeof(char));
 		if (tmp != NULL)
@@ -355,12 +355,12 @@ static void buffer_clear(struct _buffer *p)
 }
 
 /// Appends symbols of keycode at `pos` to end of keycodes in `buf->i18n_content`
-static void append_to_i18n_content(struct _buffer *buf, int pos, int languages_mask)
+static void append_to_i18n_content(struct _buffer *buf, struct _xneur_handle *handle, int pos, int languages_mask)
 {
 	KeyCode keycode = buf->keycode[pos];
 	int modifier    = buf->keycode_modifiers[pos] & languages_mask;
 
-	for (int i = 0; i < buf->handle->total_languages; i++)
+	for (int i = 0; i < handle->total_languages; i++)
 	{
 		char *symbol = buf->keymap->keycode_to_symbol(buf->keymap, keycode, i, modifier & (~ShiftMask));
 		if (symbol == NULL)
@@ -403,7 +403,7 @@ static void append_to_i18n_content(struct _buffer *buf, int pos, int languages_m
 	}
 }
 
-static void buffer_set_content(struct _buffer *p, const char *new_content)
+static void buffer_set_content(struct _buffer *p, struct _xneur_handle *handle, const char *new_content)
 {
 	if (new_content == NULL)
 		return;
@@ -411,7 +411,7 @@ static void buffer_set_content(struct _buffer *p, const char *new_content)
 	if (content == NULL)
 		return;
 
-	p->clear(p);
+	buffer_clear(p, handle);
 
 	p->cur_pos = strlen(content);
 	if (p->cur_pos >= p->cur_size)
@@ -427,7 +427,7 @@ static void buffer_set_content(struct _buffer *p, const char *new_content)
 	memcpy(p->content, content, p->cur_pos);
 	free(content);
 
-	p->keymap->convert_text_to_ascii(p->keymap, p->content, p->keycode, p->keycode_modifiers);
+	p->keymap->convert_text_to_ascii(p->keymap, handle, p->content, p->keycode, p->keycode_modifiers);
 
 	p->cur_pos = strlen(p->content);
 	set_new_size(p, p->cur_pos + 1);
@@ -435,7 +435,7 @@ static void buffer_set_content(struct _buffer *p, const char *new_content)
 	int languages_mask = get_languages_mask();
 	for (int k = 0; k < p->cur_size - 1; k++)
 	{
-		append_to_i18n_content(p, k, languages_mask);
+		append_to_i18n_content(p, handle, k, languages_mask);
 	}
 }
 
@@ -481,7 +481,7 @@ static void buffer_change_case(struct _buffer *p)
 	XCloseDisplay(display);
 }
 
-static void buffer_rotate_layout(struct _buffer *p)
+static void buffer_rotate_layout(struct _buffer *p, struct _xneur_handle *handle)
 {
 	int languages_mask = get_languages_mask();
 
@@ -489,12 +489,12 @@ static void buffer_rotate_layout(struct _buffer *p)
 	{
 		// Get current lang. modifier
 		int km = p->keycode_modifiers[i] & languages_mask;
-		for (int lang = 0; lang < p->handle->total_languages; lang++)
+		for (int lang = 0; lang < handle->total_languages; lang++)
 		{
 			if (p->keycode_modifiers[i] == (get_keycode_mod(lang) | km))
 			{
 				lang++;
-				if (lang == p->handle->total_languages)
+				if (lang == handle->total_languages)
 					lang = 0;
 				int keycode_mod	= get_keycode_mod(lang);
 				p->keycode_modifiers[i] = p->keycode_modifiers[i] & languages_mask;
@@ -505,7 +505,7 @@ static void buffer_rotate_layout(struct _buffer *p)
 	}
 }
 
-static void buffer_add_symbol(struct _buffer *p, char sym, KeyCode keycode, int modifier)
+static void buffer_add_symbol(struct _buffer *p, struct _xneur_handle *handle, char sym, KeyCode keycode, int modifier)
 {
 	if (p->cur_pos == p->cur_size - 1)
 		set_new_size(p, p->cur_size * 2);
@@ -518,13 +518,13 @@ static void buffer_add_symbol(struct _buffer *p, char sym, KeyCode keycode, int 
 	p->keycode_modifiers[p->cur_pos] = modifier;
 
 	// i18n_content
-	append_to_i18n_content(p, p->cur_pos, get_languages_mask());
+	append_to_i18n_content(p, handle, p->cur_pos, get_languages_mask());
 
 	p->cur_pos++;
 	p->content[p->cur_pos] = NULLSYM;
 }
 
-static void buffer_del_symbol(struct _buffer *p)
+static void buffer_del_symbol(struct _buffer *p, struct _xneur_handle *handle)
 {
 	if (p->cur_pos == 0)
 		return;
@@ -532,7 +532,7 @@ static void buffer_del_symbol(struct _buffer *p)
 	p->cur_pos--;
 	p->content[p->cur_pos] = NULLSYM;
 
-	for (int i = 0; i < p->handle->total_languages; i++)
+	for (int i = 0; i < handle->total_languages; i++)
 	{
 		p->i18n_content[i].content[strlen(p->i18n_content[i].content) - p->i18n_content[i].symbol_len[p->cur_pos]] = NULLSYM;
 		p->i18n_content[i].content_unchanged[strlen(p->i18n_content[i].content_unchanged) - p->i18n_content[i].symbol_len_unchanged[p->cur_pos]] = NULLSYM;
@@ -586,7 +586,7 @@ static char *buffer_get_utf_string(struct _buffer *p)
 	return utf_string;
 }
 
-static char *buffer_get_utf_string_on_kbd_group(struct _buffer *p, int group)
+static char *buffer_get_utf_string_on_kbd_group(struct _buffer *p, struct _xneur_handle *handle, int group)
 {
 	char *utf_string = (char *) malloc(1 * sizeof(char));
 	utf_string[0] = NULLSYM;
@@ -594,7 +594,7 @@ static char *buffer_get_utf_string_on_kbd_group(struct _buffer *p, int group)
 	for (int i = 0; i < p->cur_pos; i++)
 	{
 		int state = p->keycode_modifiers[i];
-		for (int j = 0; j < p->handle->total_languages; j++)
+		for (int j = 0; j < handle->total_languages; j++)
 		{
 			state = state & (~get_keycode_mod(j));
 		}
@@ -614,10 +614,10 @@ static char *buffer_get_utf_string_on_kbd_group(struct _buffer *p, int group)
 	return utf_string;
 }
 
-static void buffer_save_and_clear(struct _buffer *p, Window window)
+static void buffer_save_and_clear(struct _buffer *p, struct _xneur_handle *handle, Window window)
 {
 	buffer_save(p, LOG_NAME, window);
-	p->clear(p);
+	buffer_clear(p, handle);
 }
 
 static void buffer_set_offset(struct _buffer *p, int offset)
@@ -708,7 +708,7 @@ char* buffer_get_last_word(struct _buffer *p, char *string)
 	return string + offset;
 }
 
-static void buffer_uninit(struct _buffer *p)
+static void buffer_uninit(struct _buffer *p, struct _xneur_handle *handle)
 {
 	if (p == NULL)
 		return;
@@ -722,7 +722,7 @@ static void buffer_uninit(struct _buffer *p)
 
 	if (p->i18n_content != NULL)
 	{
-		for (int i = 0; i < p->handle->total_languages; i++)
+		for (int i = 0; i < handle->total_languages; i++)
 		{
 			if (p->i18n_content[i].content != NULL)
 				free(p->i18n_content[i].content);
@@ -747,8 +747,6 @@ struct _buffer* buffer_init(struct _xneur_handle *handle, struct _keymap *keymap
 	struct _buffer *p = (struct _buffer *) malloc(sizeof(struct _buffer));
 	bzero(p, sizeof(struct _buffer));
 
-	p->handle = handle;
-
 	p->keymap = keymap;
 
 	p->cur_size		= INIT_STRING_LENGTH;
@@ -762,7 +760,7 @@ struct _buffer* buffer_init(struct _xneur_handle *handle, struct _keymap *keymap
 	bzero(p->keycode_modifiers, p->cur_size * sizeof(int));
 
 	p->i18n_content = (struct _buffer_content *) malloc((handle->total_languages) * sizeof(struct _buffer_content));
-	for (int i=0; i<p->handle->total_languages; i++)
+	for (int i = 0; i < handle->total_languages; i++)
 	{
 		p->i18n_content[i].content = malloc(sizeof(char));
 		p->i18n_content[i].content[0] = NULLSYM;

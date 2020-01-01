@@ -32,8 +32,6 @@ struct symbol_to_keycode_pair;
 
 struct _keymap
 {
-	struct _xneur_handle *handle;
-
 	Display *display;
 
 	KeySym *keymap;
@@ -54,9 +52,9 @@ struct _keymap
 
 	void  (*get_keysyms_by_string)(struct _keymap *p, char *keyname, KeySym *Lower, KeySym *Upper);
 	char* (*keycode_to_symbol)(struct _keymap *p, KeyCode kc, int group, int state);
-	char  (*get_ascii)(struct _keymap *p, const char *sym, int* preferred_lang, KeyCode *kc, int *modifier, size_t* symbol_len);
+	char  (*get_ascii)(struct _keymap *p, struct _xneur_handle *handle, const char *sym, int* preferred_lang, KeyCode *kc, int *modifier, size_t* symbol_len);
 	char  (*get_cur_ascii_char) (struct _keymap *p, XEvent *e);
-	void  (*convert_text_to_ascii)(struct _keymap *p, char *text, KeyCode *kc, int *kc_mod);
+	void  (*convert_text_to_ascii)(struct _keymap *p, struct _xneur_handle *handle, char *text, KeyCode *kc, int *kc_mod);
 	void  (*uninit) (struct _keymap *p);
 };
 
