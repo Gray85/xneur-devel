@@ -1757,32 +1757,32 @@ static int xneur_config_replace(struct _xneur_config *p)
 	return p->load(p);
 }
 
-static void xneur_config_save_dict(struct _xneur_config *p, int lang)
+static void xneur_config_save_dict(struct _xneur_config *p, struct _xneur_language *lang)
 {
 	if (!p->educate)
 		return;
 
-	log_message(LOG, _("Saving %s dictionary"), p->handle->languages[lang].name);
+	log_message(LOG, _("Saving %s dictionary"), lang->name);
 
-	int path_len = strlen(LANGUAGEDIR) + strlen(p->handle->languages[lang].dir) + 2;
+	int path_len = strlen(LANGUAGEDIR) + strlen(lang->dir) + 2;
 	char *lang_dir = (char *) malloc(path_len * sizeof(char));
-	snprintf(lang_dir, path_len, "%s/%s", LANGUAGEDIR, p->handle->languages[lang].dir);
-	save_list(p->handle->languages[lang].dictionary, lang_dir, DICT_NAME);
+	snprintf(lang_dir, path_len, "%s/%s", LANGUAGEDIR, lang->dir);
+	save_list(lang->dictionary, lang_dir, DICT_NAME);
 	if (lang_dir != NULL)
 		free (lang_dir);
 }
 
-static void xneur_config_save_pattern(struct _xneur_config *p, int lang)
+static void xneur_config_save_pattern(struct _xneur_config *p, struct _xneur_language *lang)
 {
 	if (!p->educate)
 		return;
 
-	log_message(LOG, _("Saving %s pattern"), p->handle->languages[lang].name);
+	log_message(LOG, _("Saving %s pattern"), lang->name);
 
-	int path_len = strlen(LANGUAGEDIR) + strlen(p->handle->languages[lang].dir) + 2;
+	int path_len = strlen(LANGUAGEDIR) + strlen(lang->dir) + 2;
 	char *lang_dir = (char *) malloc(path_len * sizeof(char));
-	snprintf(lang_dir, path_len, "%s/%s", LANGUAGEDIR, p->handle->languages[lang].dir);
-	save_list(p->handle->languages[lang].pattern, lang_dir, PATTERN_NAME);
+	snprintf(lang_dir, path_len, "%s/%s", LANGUAGEDIR, lang->dir);
+	save_list(lang->pattern, lang_dir, PATTERN_NAME);
 	if (lang_dir != NULL)
 		free(lang_dir);
 }

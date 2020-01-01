@@ -3016,11 +3016,11 @@ static void program_add_word_to_dict(struct _program *p, int new_lang)
 		return;
 	}
 
-	for (int lang = 0; lang < xconfig->handle->total_languages; lang++)
+	for (int l = 0; l < xconfig->handle->total_languages; l++)
 	{
-		if (lang != new_lang)
+		if (l != new_lang)
 		{
-			tmp = p->buffer->get_last_word(p->buffer, p->buffer->i18n_content[lang].content);
+			tmp = p->buffer->get_last_word(p->buffer, p->buffer->i18n_content[l].content);
 
 			char *curr_word = strdup(tmp);
 			if (curr_word == NULL)
@@ -3048,10 +3048,11 @@ static void program_add_word_to_dict(struct _program *p, int new_lang)
 					break;
 			}
 
-			struct _list_char *curr_dictionary = xconfig->handle->languages[lang].dictionary;
+			struct _xneur_language *lang = &xconfig->handle->languages[l];
+			struct _list_char *curr_dictionary = lang->dictionary;
 			if (curr_dictionary->exist(curr_dictionary, curr_word+offset, BY_REGEXP))
 			{
-				log_message(DEBUG, _("Remove word '%s' from %s dictionary"), curr_word+offset, xconfig->handle->languages[lang].name);
+				log_message(DEBUG, _("Remove word '%s' from %s dictionary"), curr_word+offset, lang->name);
 				char *word_to_dict = malloc((strlen(curr_word+offset) + 7) * sizeof(char));
 				if (word_to_dict == NULL)
 					continue;
@@ -3064,7 +3065,8 @@ static void program_add_word_to_dict(struct _program *p, int new_lang)
 		}
 	}
 
-	struct _list_char *new_dictionary = xconfig->handle->languages[new_lang].dictionary;
+	struct _xneur_language *lang = &xconfig->handle->languages[new_lang];
+	struct _list_char *new_dictionary = lang->dictionary;
 	if (!new_dictionary->exist(new_dictionary, new_word+offset, BY_REGEXP))
 	{
 		char *word_to_dict = malloc((strlen(new_word+offset) + 7) * sizeof(char));
@@ -3073,10 +3075,10 @@ static void program_add_word_to_dict(struct _program *p, int new_lang)
 		sprintf(word_to_dict, "%s%s%s", "(?i)^", new_word+offset, "$");
 		if (strcmp(word_to_dict, "(?i)^.$") != 0)
 		{
-			log_message(DEBUG, _("Add word '%s' in %s dictionary"), new_word+offset, xconfig->handle->languages[new_lang].name);
+			log_message(DEBUG, _("Add word '%s' in %s dictionary"), new_word+offset, lang->name);
 			new_dictionary->add(new_dictionary, word_to_dict);
 		}
-		xconfig->save_dict(xconfig, new_lang);
+		xconfig->save_dict(xconfig, lang);
 		free(word_to_dict);
 	}
 
@@ -3148,12 +3150,13 @@ static void program_add_word_to_pattern(struct _program *p, int new_lang)
 				break;
 		}
 
-		struct _list_char *old_pattern = xconfig->handle->languages[i].pattern;
+		struct _xneur_language *lang = &xconfig->handle->languages[i];
+		struct _list_char *old_pattern = lang->pattern;
 		if (old_pattern->exist(old_pattern, old_word+offset, BY_PLAIN))
 		{
-			log_message(DEBUG, _("Remove word '%s' from %s pattern"), old_word+offset, xconfig->handle->languages[i].name);
+			log_message(DEBUG, _("Remove word '%s' from %s pattern"), old_word+offset, lang->name);
 			old_pattern->rem(old_pattern, old_word+offset);
-			xconfig->save_pattern(xconfig, i);
+			xconfig->save_pattern(xconfig, lang);
 		}
 		free (old_word);
 	}
@@ -3186,12 +3189,13 @@ static void program_add_word_to_pattern(struct _program *p, int new_lang)
 	}
 #endif
 
-	struct _list_char *new_pattern = xconfig->handle->languages[new_lang].pattern;
+	struct _xneur_language *lang = &xconfig->handle->languages[new_lang];
+	struct _list_char *new_pattern = lang->pattern;
 	if (!new_pattern->exist(new_pattern, new_word+offset, BY_PLAIN))
 	{
-		log_message(DEBUG, _("Add word '%s' in %s pattern"), new_word+offset, xconfig->handle->languages[new_lang].name);
+		log_message(DEBUG, _("Add word '%s' in %s pattern"), new_word+offset, lang->name);
 		new_pattern->add(new_pattern, new_word+offset);
-		xconfig->save_pattern(xconfig, new_lang);
+		xconfig->save_pattern(xconfig, lang);
 	}
 
 	free(new_word);

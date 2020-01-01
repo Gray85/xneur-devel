@@ -298,8 +298,8 @@ struct _xneur_config
 	int   (*replace) (struct _xneur_config *p);
 	void  (*reload) (struct _xneur_config *p);
 	int   (*kill) (struct _xneur_config *p);
-	void  (*save_dict) (struct _xneur_config *p, int lang);
-	void  (*save_pattern) (struct _xneur_config *p, int lang);
+	void  (*save_dict) (struct _xneur_config *p, struct _xneur_language *lang);
+	void  (*save_pattern) (struct _xneur_config *p, struct _xneur_language *lang);
 	pid_t (*set_pid) (struct _xneur_config *p, pid_t pid);
 	pid_t (*get_pid) (struct _xneur_config *p);
 	const char* (*get_log_level_name) (struct _xneur_config *p);
