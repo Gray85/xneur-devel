@@ -405,15 +405,6 @@ static void append_to_i18n_content(struct _buffer *buf, int pos, int languages_m
 	}
 }
 
-static void buffer_set_i18n_content(struct _buffer *p)
-{
-	int languages_mask = get_languages_mask();
-	for (int k = 0; k < p->cur_size-1; k++)
-	{
-		append_to_i18n_content(p, k, languages_mask);
-	}
-}
-
 static void buffer_set_content(struct _buffer *p, const char *new_content)
 {
 	if (new_content == NULL)
@@ -443,7 +434,11 @@ static void buffer_set_content(struct _buffer *p, const char *new_content)
 	p->cur_pos = strlen(p->content);
 	set_new_size(p, p->cur_pos + 1);
 
-	buffer_set_i18n_content(p);
+	int languages_mask = get_languages_mask();
+	for (int k = 0; k < p->cur_size - 1; k++)
+	{
+		append_to_i18n_content(p, k, languages_mask);
+	}
 }
 
 static void buffer_change_case(struct _buffer *p)
