@@ -214,7 +214,7 @@ static void parse_hotkey(char **line, struct _xneur_hotkey * hotkey)
 	}
 }
 
-static void parse_line(struct _xneur_config *p, char *line)
+static void parse_line(struct _xneur_config *p, struct _xneur_handle *handle, char *line)
 {
 	if (line[0] == '#')
 		return;
@@ -313,10 +313,10 @@ static void parse_line(struct _xneur_config *p, char *line)
 		}
 		case 4: // Add Language
 		{
-			for (int lang = 0; lang < p->handle->total_languages; lang++)
+			for (int lang = 0; lang < handle->total_languages; lang++)
 			{
-				if (strcmp(p->handle->languages[lang].dir, param) == 0)
-					p->handle->languages[lang].excluded = TRUE;
+				if (strcmp(handle->languages[lang].dir, param) == 0)
+					handle->languages[lang].excluded = TRUE;
 			}
 
 			break;
@@ -1096,7 +1096,7 @@ static void parse_line(struct _xneur_config *p, char *line)
 	free(full_string);
 }
 
-static int parse_config_file(struct _xneur_config *p, const char *dir_name, const char *file_name)
+static int parse_config_file(struct _xneur_config *p, struct _xneur_handle *handle, const char *dir_name, const char *file_name)
 {
 	struct _list_char *list = load_list(dir_name, file_name, FALSE);
 	if (list == NULL)
@@ -1107,7 +1107,7 @@ static int parse_config_file(struct _xneur_config *p, const char *dir_name, cons
 
 	for (int i = 0; i < list->data_count; i++)
 	{
-		parse_line(p, list->data[i].string);
+		parse_line(p, handle, list->data[i].string);
 	}
 
 	list->uninit(list);
@@ -1285,12 +1285,12 @@ static int xneur_config_get_pid(struct _xneur_config *p)
 	return -1;
 }
 
-static int xneur_config_load(struct _xneur_config *p)
+static int xneur_config_load(struct _xneur_config *p, struct _xneur_handle *handle)
 {
-	if (!parse_config_file(p, NULL, CONFIG_NAME))
+	if (!parse_config_file(p, handle, NULL, CONFIG_NAME))
 		return FALSE;
 
-	if (p->handle->total_languages == 0)
+	if (handle->total_languages == 0)
 	{
 		log_message(ERROR, _("No languages specified in config file"));
 		return FALSE;
@@ -1319,7 +1319,7 @@ static void xneur_config_clear(struct _xneur_config *p)
 	p->actions	= NULL;
 }
 
-static int xneur_config_save(struct _xneur_config *p)
+static int xneur_config_save(struct _xneur_config *p, struct _xneur_handle *handle)
 {
  	char *config_file_path_name = get_home_file_path_name(NULL, CONFIG_NAME);
 	if (config_file_path_name == NULL)
@@ -1362,10 +1362,10 @@ static int xneur_config_save(struct _xneur_config *p)
 	fprintf(stream, "# Example:\n");
 	fprintf(stream, "#ExcludeLanguage de\n");
 
-	for (int lang = 0; lang < p->handle->total_languages; lang++)
+	for (int lang = 0; lang < handle->total_languages; lang++)
 	{
-		if (p->handle->languages[lang].excluded)
-			fprintf(stream, "ExcludeLanguage %s\n", p->handle->languages[lang].dir);
+		if (handle->languages[lang].excluded)
+			fprintf(stream, "ExcludeLanguage %s\n", handle->languages[lang].dir);
 	}
 	fprintf(stream, "\n");
 
@@ -1720,7 +1720,7 @@ static int xneur_config_save(struct _xneur_config *p)
 	return TRUE;
 }
 
-static int xneur_config_replace(struct _xneur_config *p)
+static int xneur_config_replace(struct _xneur_config *p, struct _xneur_handle *handle)
 {
 	char *config_file_path_name = get_file_path_name(NULL, CONFIG_NAME);
 	if (config_file_path_name == NULL)
@@ -1754,7 +1754,7 @@ static int xneur_config_replace(struct _xneur_config *p)
 	free(config_file_path_name);
 	free(config_backup_file_path_name);
 
-	return p->load(p);
+	return p->load(p, handle);
 }
 
 static void xneur_config_save_dict(struct _xneur_config *p, struct _xneur_language *lang)

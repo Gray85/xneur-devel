@@ -538,7 +538,7 @@ KXNeurConf::KXNeurConf(KXNeurApp *app, QWidget *parent)
     abbr_page = new AbbrPage(0, "AbbrPage");
 
     addPage( kxneur_page, i18n("Common"), "keyboard_layout", i18n("Commons Options") ); // or pic = embedjs, exec
-    addPage( xneur_page, i18n("Languages"), "locale", i18n("Languages Options") ); // or pic = 
+    addPage( xneur_page, i18n("Languages"), "locale", i18n("Languages Options") ); // or pic =
     addPage( keys_page, i18n("Keys"), "key_bindings", i18n("Key Combinations") );
     addPage( prog_page, i18n("Programs"), "kwin", i18n("Exclusions for Program") );
     addPage( snd_page, i18n("Sounds"), "kmix", i18n("Sounds for Events") );
@@ -725,15 +725,15 @@ void KXNeurConf::LoadSettings()
 
 void KXNeurConf::SaveSettings()
 {
-    KXNeurSettings::setRunXNeur( 
+    KXNeurSettings::setRunXNeur(
 	kxneur_page->run_xneur->isChecked() );
-    KXNeurSettings::setForceRun( 
+    KXNeurSettings::setForceRun(
 	kxneur_page->force_run->isChecked() );
-    KXNeurSettings::setAutostart( 
+    KXNeurSettings::setAutostart(
 	kxneur_page->autostart->isChecked() );
-    KXNeurSettings::setShowInTray( 
+    KXNeurSettings::setShowInTray(
 	kxneur_page->in_tray->currentItem() );
-    KXNeurSettings::setSwitcherMode( 
+    KXNeurSettings::setSwitcherMode(
 	kxneur_page->sw_mode->isChecked() );
 
     knapp->xnconf->clear(knapp->xnconf);
@@ -852,9 +852,9 @@ void KXNeurConf::SaveSettings()
     if ( abbr_page->ignore_layout->isChecked() )
 	knapp->xnconf->abbr_ignore_layout = 1;
     else
-	knapp->xnconf->abbr_ignore_layout = 0; 
+	knapp->xnconf->abbr_ignore_layout = 0;
 
-    knapp->xnconf->save(knapp->xnconf);
+    knapp->xnconf->save(knapp->xnconf, knapp->xnconf->handle);
     knapp->xnconf->reload(knapp->xnconf);
 
 /*    if ( knapp->xneur_stop() )

@@ -108,7 +108,7 @@ bool kXneurApp::xNeurConfig::init_libxnconfig()
         exit(1);
     }
     qDebug()<<QString(tr("Using libxnconfig API version 0.%1.%2 (build with 0.%3.%4)")).arg(major_version).arg(minor_version).arg(XNEUR_NEEDED_MAJOR_VERSION).arg(XNEUR_BUILD_MINOR_VERSION);
-    if (!xconfig->load(xconfig))
+    if (!xconfig->load(xconfig, xconfig->handle))
     {
         qDebug()<< tr("XNeur's config broken or was created with old version!\nPlease, remove ~/.xneur/. It should solve the problem!\nIf you don't want to loose your configuration, back it up\nand manually patch new configuration which will be created after first run.");
         xconfig->uninit(xconfig);
@@ -210,7 +210,7 @@ void kXneurApp::xNeurConfig::clearNeurConfig()
 
 void kXneurApp::xNeurConfig::saveNeurConfig()
 {
-      xconfig->save(xconfig);
+      xconfig->save(xconfig, xconfig->handle);
       xconfig->reload(xconfig);
 }
 
@@ -527,7 +527,7 @@ void kXneurApp::xNeurConfig::hot_save_list_command_hotkeys(QMap <QString, QStrin
 
     for(int action=0; action < listHotKey.size(); action++)
     {
-      
+
          xconfig->actions = (struct _xneur_action *) realloc(xconfig->actions, (action + 1) * sizeof(struct _xneur_action));
          memset(&xconfig->actions[action], 0,  sizeof(struct _xneur_action));
          xconfig->actions[action].hotkey.modifiers = 0;
@@ -537,7 +537,7 @@ void kXneurApp::xNeurConfig::hot_save_list_command_hotkeys(QMap <QString, QStrin
 	    if (lstCommand_hotKey[i] == action_list.key())
 	    {
 		xconfig->actions[action].action = (_hotkey_action)i;
-		
+
 	    }
 	 }
 
@@ -556,7 +556,7 @@ void kXneurApp::xNeurConfig::hot_save_list_command_hotkeys(QMap <QString, QStrin
              }
              if (assigned == false)
              {
-		  xconfig->actions[action].hotkey.key = strdup(key_stat.at(i).toUtf8().data());          
+		  xconfig->actions[action].hotkey.key = strdup(key_stat.at(i).toUtf8().data());
              }
          }
          action_list++;
@@ -607,9 +607,9 @@ void kXneurApp::xNeurConfig::hot_save_list_user_actions(QMap<QString, QMap<QStri
          xconfig->user_actions = (struct _xneur_user_action *) realloc(xconfig->user_actions, (action + 1) * sizeof(struct _xneur_user_action));
          memset(&xconfig->user_actions[action], 0,  sizeof(struct _xneur_user_action));
          xconfig->user_actions[action].hotkey.modifiers = 0;
-	
+
          tmpCmd = usr_action_list.value();
-	 
+
          QStringList key_stat = QString("%1").arg(usr_action_list.key()).replace(" ","").split("+");
          for(int i = 0; i < key_stat.size(); i++)
          {
@@ -642,7 +642,7 @@ void kXneurApp::xNeurConfig::hot_save_list_user_actions(QMap<QString, QMap<QStri
          usr_action_list++;
 	 //qDebug()  <<action
 	 //<< QString("%1").arg(xconfig->user_actions[action].name)
-	 //<< QString("%1").arg(xconfig->user_actions[action].command) 
+	 //<< QString("%1").arg(xconfig->user_actions[action].command)
 	 //<< QString("%1").arg(xconfig->user_actions[action].hotkey.key)
 	 //<< QString("%1").arg(xconfig->user_actions[action].hotkey.modifiers);
 

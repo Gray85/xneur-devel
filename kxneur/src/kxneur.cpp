@@ -107,7 +107,7 @@ bool KXNeurApp::xneur_start()
 		quit();
 	}
 	// xnconf_reload();
-	if ( !xnconf->load(xnconf) ) {
+	if ( !xnconf->load(xnconf, xnconf->handle) ) {
 		qDebug("XNeur config broken!\nPlease, remove ~/.xneur/xneurrc and reinstall XNeur package!\n");
 		QMessageBox::critical(0, "XNeur", i18n("XNeur config broken!\nPlease, remove ~/.xneur/xneurrc and reinstall XNeur package!\n"));
                 xnconf->uninit(xnconf);

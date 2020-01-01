@@ -292,10 +292,10 @@ struct _xneur_config
 	char* (*get_global_dict_path) (const char *dir_name, const char *file_name);
 	const char* (*get_bool_name) (int option);
 
-	int   (*load) (struct _xneur_config *p);
+	int   (*load) (struct _xneur_config *p, struct _xneur_handle *handle);
 	void  (*clear) (struct _xneur_config *p);
-	int   (*save) (struct _xneur_config *p);
-	int   (*replace) (struct _xneur_config *p);
+	int   (*save) (struct _xneur_config *p, struct _xneur_handle *handle);
+	int   (*replace) (struct _xneur_config *p, struct _xneur_handle *handle);
 	void  (*reload) (struct _xneur_config *p);
 	int   (*kill) (struct _xneur_config *p);
 	void  (*save_dict) (struct _xneur_config *p, struct _xneur_language *lang);

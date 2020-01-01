@@ -67,7 +67,7 @@ static int xneur_generate_proto = FALSE;
 
 static void xneur_reload(int status);
 
-/*static void xneur_check_config_version(void)
+/*static void xneur_check_config_version(struct _xneur_handle *handle)
 {
 
 	log_message(LOG, _("Checking configuration file version..."));
@@ -86,7 +86,7 @@ static void xneur_reload(int status);
 		exit(EXIT_FAILURE);
 	}
 
-	if (!xconfig->replace(xconfig))
+	if (!xconfig->replace(xconfig, handle))
 	{
 		log_message(ERROR, _("Default configuration file not founded in system! Please, reinstall XNeur!"));
 		xconfig->uninit(xconfig);
@@ -105,11 +105,11 @@ static void xneur_init(void)
 	bind_user_actions();
 }
 
-static void xneur_load_config(void)
+static void xneur_load_config(struct _xneur_handle *handle)
 {
 	log_message(LOG, _("Loading configuration"));
 
-	if (!xconfig->load(xconfig))
+	if (!xconfig->load(xconfig, handle))
 	{
 		log_message(ERROR, _("Configuration file damaged! Please, remove old file before starting xneur!"));
 		xconfig->uninit(xconfig);
@@ -123,20 +123,20 @@ static void xneur_load_config(void)
 	log_message(DEBUG, _("Configuration load complete"));
 
 	log_message(LOG, _("Keyboard layouts present in system:"));
-	for (int lang = 0; lang < xconfig->handle->total_languages; lang++)
+	for (int lang = 0; lang < handle->total_languages; lang++)
 	{
-		if (xconfig->handle->languages[lang].excluded)
-			log_message(LOG, _("   Excluded XKB Group '%s', layout '%s', group '%d'"), xconfig->handle->languages[lang].name, xconfig->handle->languages[lang].dir, lang);
+		if (handle->languages[lang].excluded)
+			log_message(LOG, _("   Excluded XKB Group '%s', layout '%s', group '%d'"), handle->languages[lang].name, handle->languages[lang].dir, lang);
 		else
-			log_message(LOG, _("   Included XKB Group '%s', layout '%s', group '%d'"), xconfig->handle->languages[lang].name, xconfig->handle->languages[lang].dir, lang);
+			log_message(LOG, _("   Included XKB Group '%s', layout '%s', group '%d'"), handle->languages[lang].name, handle->languages[lang].dir, lang);
 
-		char *lang_name = xconfig->handle->languages[lang].name;
+		char *lang_name = handle->languages[lang].name;
 
-		log_message(DEBUG, _("      %s dictionary has %d records"), lang_name, xconfig->handle->languages[lang].dictionary->data_count);
-		log_message(DEBUG, _("      %s proto has %d records"), lang_name, xconfig->handle->languages[lang].proto->data_count);
-		log_message(DEBUG, _("      %s big proto has %d records"), lang_name, xconfig->handle->languages[lang].big_proto->data_count);
+		log_message(DEBUG, _("      %s dictionary has %d records"), lang_name, handle->languages[lang].dictionary->data_count);
+		log_message(DEBUG, _("      %s proto has %d records"), lang_name, handle->languages[lang].proto->data_count);
+		log_message(DEBUG, _("      %s big proto has %d records"), lang_name, handle->languages[lang].big_proto->data_count);
 #ifdef WITH_ASPELL
-		if (xconfig->handle->has_spell_checker[lang])
+		if (handle->has_spell_checker[lang])
 		{
 			log_message(DEBUG, _("      %s aspell dictionary loaded"), lang_name);
 		}
@@ -146,7 +146,7 @@ static void xneur_load_config(void)
 		}
 #endif
 #ifdef WITH_ENCHANT
-		if (xconfig->handle->enchant_dicts[lang])
+		if (handle->enchant_dicts[lang])
 		{
 			log_message(DEBUG, _("      %s enchant wrapper dictionary loaded"), lang_name);
 		}
@@ -156,9 +156,9 @@ static void xneur_load_config(void)
 		}
 #endif
 	}
-	log_message(LOG, _("Total %d keyboard layouts detected"), xconfig->handle->total_languages);
+	log_message(LOG, _("Total %d keyboard layouts detected"), handle->total_languages);
 
-	if (xconfig->handle->total_languages < 2)
+	if (handle->total_languages < 2)
 	{
 		log_message(ERROR, _("For correct operation of the program in the system should be set 2 or more keyboard layouts!"));
 		xconfig->uninit(xconfig);
@@ -314,7 +314,7 @@ static void xneur_reload(int status)
 		exit(EXIT_FAILURE);
 	}
 
-	xneur_load_config();
+	xneur_load_config(xconfig->handle);
 
 	xneur_init();
 	sound_init();
@@ -477,7 +477,7 @@ int main(int argc, char *argv[])
 	}
 
 	xneur_set_lock();
-	xneur_load_config();
+	xneur_load_config(xconfig->handle);
 
 	int process_id = xconfig->get_pid(xconfig);
 	//int priority = getpriority(PRIO_PROCESS, process_id);
