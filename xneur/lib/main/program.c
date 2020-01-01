@@ -2501,6 +2501,61 @@ static void program_send_string_silent(struct _program *p, int send_backspaces)
 	p->event->send_string(p->event, p->buffer);		// Send new string
 }
 
+static void correct_word(struct _program *p, KeySym keysym, int keycount, enum _correction_action action) {
+	if (p->correction_action == CORRECTION_NONE)
+	{
+		p->event->send_backspaces(p->event, keycount);
+
+		int key_code = main_window->keymap->max_keycode;
+		int size = main_window->keymap->keysyms_per_keycode;
+		KeySym *keymap = main_window->keymap->keymap + (key_code - main_window->keymap->min_keycode) * size;
+
+		KeySym keysyms_bckp[size];
+		for (int i = 0; i < size; i++)
+		{
+			keysyms_bckp[i] = keymap[i];
+		}
+
+		KeySym keysyms[size];
+		for (int i = 0; i < size; i++)
+		{
+			keysyms[i] = keysym;
+		}
+		XChangeKeyboardMapping(main_window->display, key_code, size, keysyms, 1);
+		XFlush(main_window->display);
+		XSync(main_window->display, TRUE);
+
+		p->event->send_xkey(p->event, key_code, 0);
+		usleep(100000);
+
+		XChangeKeyboardMapping(main_window->display, key_code, size, keysyms_bckp, 1);
+		XFlush(main_window->display);
+		XSync(main_window->display, TRUE);
+
+		p->buffer->clear(p->buffer);
+		p->event->default_event.xkey.keycode = 0;
+	} else
+	if (p->correction_action == action)
+	{
+		p->event->send_spaces(p->event, keycount);
+
+		p->buffer->set_content(p->buffer, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
+		p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
+
+		int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
+
+		// Shift fields to point to begin of word
+		p->buffer->set_offset(p->buffer, offset);
+
+		program_send_string_silent(p, p->buffer->cur_pos);
+
+		// Revert fields back
+		p->buffer->unset_offset(p->buffer, offset);
+
+		p->correction_buffer->clear(p->correction_buffer);
+		p->correction_action = CORRECTION_NONE;
+	}
+}
 static void program_change_word(struct _program *p, enum _change_action action)
 {
 	switch (action)
@@ -2682,293 +2737,27 @@ static void program_change_word(struct _program *p, enum _change_action action)
 		}
 		case CHANGE_COPYRIGHT:
 		{
-			if (p->correction_action == CORRECTION_NONE)
-			{
-				p->event->send_backspaces(p->event, 2);
-
-				int key_code = main_window->keymap->max_keycode;
-				KeySym keysyms_bckp[main_window->keymap->keysyms_per_keycode];
-				KeySym *keymap = main_window->keymap->keymap + (key_code - main_window->keymap->min_keycode) * main_window->keymap->keysyms_per_keycode;
-				for (int i = 0; i < main_window->keymap->keysyms_per_keycode; i++)
-				{
-					keysyms_bckp[i]= keymap[i];
-				}
-
-				KeySym keysyms[main_window->keymap->keysyms_per_keycode];
-
-				for (int i = 0; i < main_window->keymap->keysyms_per_keycode; i++)
-				{
-					keysyms[i]= XK_copyright;//
-				}
-				XChangeKeyboardMapping(main_window->display, key_code,
-								        main_window->keymap->keysyms_per_keycode, keysyms, 1);
-				XFlush(main_window->display);
-				XSync(main_window->display, TRUE);
-				p->event->send_xkey(p->event, key_code, 0);
-				usleep(100000);
-
-				XChangeKeyboardMapping(main_window->display, key_code,
-			   		                    main_window->keymap->keysyms_per_keycode, keysyms_bckp, 1);
-				XFlush(main_window->display);
-				XSync(main_window->display, TRUE);
-
-				p->buffer->clear(p->buffer);
-				p->event->default_event.xkey.keycode = 0;
-			}
-			else if (p->correction_action == CORRECTION_COPYRIGHT)
-			{
-				p->event->send_spaces(p->event, 2);
-
-				p->buffer->set_content(p->buffer, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
-				p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
-
-				int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
-
-				// Shift fields to point to begin of word
-				p->buffer->set_offset(p->buffer, offset);
-
-				program_send_string_silent(p, p->buffer->cur_pos);
-
-				// Revert fields back
-				p->buffer->unset_offset(p->buffer, offset);
-
-				p->correction_buffer->clear(p->correction_buffer);
-				p->correction_action = CORRECTION_NONE;
-			}
+			correct_word(p, XK_copyright, 2, CORRECTION_COPYRIGHT);
 			break;
 		}
 		case CHANGE_TRADEMARK:
 		{
-			if (p->correction_action == CORRECTION_NONE)
-			{
-				p->event->send_backspaces(p->event, 3);
-
-				int key_code = main_window->keymap->max_keycode;
-				KeySym keysyms_bckp[main_window->keymap->keysyms_per_keycode];
-				KeySym *keymap = main_window->keymap->keymap + (key_code - main_window->keymap->min_keycode) * main_window->keymap->keysyms_per_keycode;
-				for (int i = 0; i < main_window->keymap->keysyms_per_keycode; i++)
-				{
-					keysyms_bckp[i]= keymap[i];
-				}
-
-				KeySym keysyms[main_window->keymap->keysyms_per_keycode];
-
-				for (int i = 0; i < main_window->keymap->keysyms_per_keycode; i++)
-				{
-					keysyms[i]= XK_trademark;//
-				}
-				XChangeKeyboardMapping(main_window->display, key_code,
-								        main_window->keymap->keysyms_per_keycode, keysyms, 1);
-				XFlush(main_window->display);
-				XSync(main_window->display, TRUE);
-				p->event->send_xkey(p->event, key_code, 0);
-				usleep(100000);
-
-				XChangeKeyboardMapping(main_window->display, key_code,
-			   		                    main_window->keymap->keysyms_per_keycode, keysyms_bckp, 1);
-				XFlush(main_window->display);
-				XSync(main_window->display, TRUE);
-
-				p->buffer->clear(p->buffer);
-				p->event->default_event.xkey.keycode = 0;
-			}
-			else if (p->correction_action == CORRECTION_TRADEMARK)
-			{
-				p->event->send_spaces(p->event, 3);
-
-				p->buffer->set_content(p->buffer, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
-				p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
-
-				int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
-
-				// Shift fields to point to begin of word
-				p->buffer->set_offset(p->buffer, offset);
-
-				program_send_string_silent(p, p->buffer->cur_pos);
-
-				// Revert fields back
-				p->buffer->unset_offset(p->buffer, offset);
-
-				p->correction_buffer->clear(p->correction_buffer);
-				p->correction_action = CORRECTION_NONE;
-			}
+			correct_word(p, XK_trademark, 3, CORRECTION_TRADEMARK);
 			break;
 		}
 		case CHANGE_REGISTERED:
 		{
-			if (p->correction_action == CORRECTION_NONE)
-			{
-				p->event->send_backspaces(p->event, 2);
-
-				int key_code = main_window->keymap->max_keycode;
-				KeySym keysyms_bckp[main_window->keymap->keysyms_per_keycode];
-				KeySym *keymap = main_window->keymap->keymap + (key_code - main_window->keymap->min_keycode) * main_window->keymap->keysyms_per_keycode;
-				for (int i = 0; i < main_window->keymap->keysyms_per_keycode; i++)
-				{
-					keysyms_bckp[i]= keymap[i];
-				}
-
-				KeySym keysyms[main_window->keymap->keysyms_per_keycode];
-
-				for (int i = 0; i < main_window->keymap->keysyms_per_keycode; i++)
-				{
-					keysyms[i]= XK_registered;//
-				}
-				XChangeKeyboardMapping(main_window->display, key_code,
-								        main_window->keymap->keysyms_per_keycode, keysyms, 1);
-				XFlush(main_window->display);
-				XSync(main_window->display, TRUE);
-				p->event->send_xkey(p->event, key_code, 0);
-				usleep(100000);
-
-				XChangeKeyboardMapping(main_window->display, key_code,
-			   		                    main_window->keymap->keysyms_per_keycode, keysyms_bckp, 1);
-				XFlush(main_window->display);
-				XSync(main_window->display, TRUE);
-
-				p->buffer->clear(p->buffer);
-				p->event->default_event.xkey.keycode = 0;
-			}
-			else if (p->correction_action == CORRECTION_REGISTERED)
-			{
-				p->event->send_spaces(p->event, 2);
-
-				p->buffer->set_content(p->buffer, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
-				p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
-
-				int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
-
-				// Shift fields to point to begin of word
-				p->buffer->set_offset(p->buffer, offset);
-
-				program_send_string_silent(p, p->buffer->cur_pos);
-
-				// Revert fields back
-				p->buffer->unset_offset(p->buffer, offset);
-
-				p->correction_buffer->clear(p->correction_buffer);
-				p->correction_action = CORRECTION_NONE;
-			}
+			correct_word(p, XK_registered, 2, CORRECTION_REGISTERED);
 			break;
 		}
 		case CHANGE_ELLIPSIS:
 		{
-			if (p->correction_action == CORRECTION_NONE)
-			{
-				p->event->send_backspaces(p->event, 2);
-
-				int key_code = main_window->keymap->max_keycode;
-				KeySym keysyms_bckp[main_window->keymap->keysyms_per_keycode];
-				KeySym *keymap = main_window->keymap->keymap + (key_code - main_window->keymap->min_keycode) * main_window->keymap->keysyms_per_keycode;
-				for (int i = 0; i < main_window->keymap->keysyms_per_keycode; i++)
-				{
-					keysyms_bckp[i]= keymap[i];
-				}
-
-				KeySym keysyms[main_window->keymap->keysyms_per_keycode];
-
-				for (int i = 0; i < main_window->keymap->keysyms_per_keycode; i++)
-				{
-					keysyms[i]= XK_ellipsis;//
-				}
-				XChangeKeyboardMapping(main_window->display, key_code,
-								        main_window->keymap->keysyms_per_keycode, keysyms, 1);
-				XFlush(main_window->display);
-				XSync(main_window->display, TRUE);
-				p->event->send_xkey(p->event, key_code, 0);
-				usleep(100000);
-
-				XChangeKeyboardMapping(main_window->display, key_code,
-			   		                    main_window->keymap->keysyms_per_keycode, keysyms_bckp, 1);
-				XFlush(main_window->display);
-				XSync(main_window->display, TRUE);
-
-				p->buffer->clear(p->buffer);
-				p->correction_buffer->clear(p->buffer);
-				p->event->default_event.xkey.keycode = 0;
-			}
-			else if (p->correction_action == CORRECTION_ELLIPSIS)
-			{
-				p->event->send_spaces(p->event, 2);
-
-				p->buffer->set_content(p->buffer, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
-				p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
-
-				int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
-
-				// Shift fields to point to begin of word
-				p->buffer->set_offset(p->buffer, offset);
-
-				program_send_string_silent(p, p->buffer->cur_pos);
-
-				// Revert fields back
-				p->buffer->unset_offset(p->buffer, offset);
-
-				p->correction_buffer->clear(p->correction_buffer);
-				p->correction_action = CORRECTION_NONE;
-			}
+			correct_word(p, XK_ellipsis, 2, CORRECTION_ELLIPSIS);
 			break;
 		}
 		case CHANGE_WORD_TO_LAYOUT_0:
-		{
-			int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
-
-			// Shift fields to point to begin of word
-			p->buffer->set_offset(p->buffer, offset);
-
-			program_change_lang(p, 0);
-
-			int len = p->buffer->cur_pos;
-			if (p->last_action == ACTION_AUTOCOMPLETION)
-				len = p->buffer->cur_pos + 1;
-			program_send_string_silent(p, len);
-
-			p->last_action = ACTION_NONE;
-
-			// Revert fields back
-			p->buffer->unset_offset(p->buffer, offset);
-			break;
-		}
 		case CHANGE_WORD_TO_LAYOUT_1:
-		{
-			int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
-
-			// Shift fields to point to begin of word
-			p->buffer->set_offset(p->buffer, offset);
-
-			program_change_lang(p, 1);
-
-			int len = p->buffer->cur_pos;
-			if (p->last_action == ACTION_AUTOCOMPLETION)
-				len = p->buffer->cur_pos + 1;
-			program_send_string_silent(p, len);
-
-			p->last_action = ACTION_NONE;
-
-			// Revert fields back
-			p->buffer->unset_offset(p->buffer, offset);
-			break;
-		}
 		case CHANGE_WORD_TO_LAYOUT_2:
-		{
-			int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
-
-			// Shift fields to point to begin of word
-			p->buffer->set_offset(p->buffer, offset);
-
-			program_change_lang(p, 2);
-
-			int len = p->buffer->cur_pos;
-			if (p->last_action == ACTION_AUTOCOMPLETION)
-				len = p->buffer->cur_pos + 1;
-			program_send_string_silent(p, len);
-
-			p->last_action = ACTION_NONE;
-
-			// Revert fields back
-			p->buffer->unset_offset(p->buffer, offset);
-			break;
-		}
 		case CHANGE_WORD_TO_LAYOUT_3:
 		{
 			int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
@@ -2976,7 +2765,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			// Shift fields to point to begin of word
 			p->buffer->set_offset(p->buffer, offset);
 
-			program_change_lang(p, 3);
+			program_change_lang(p, action - CHANGE_WORD_TO_LAYOUT_0);
 
 			int len = p->buffer->cur_pos;
 			if (p->last_action == ACTION_AUTOCOMPLETION)
@@ -3053,59 +2842,8 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			break;
 		}
 		case CHANGE_SYLL_TO_LAYOUT_0:
-		{
-			int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
-
-			// Shift fields to point to begin of word
-			p->buffer->set_offset(p->buffer, offset);
-
-			program_change_lang(p, 0);
-
-			int len = p->buffer->cur_pos - 1;
-			if (p->last_action == ACTION_AUTOCOMPLETION)
-				len = p->buffer->cur_pos;
-			program_send_string_silent(p, len);
-
-			// Revert fields back
-			p->buffer->unset_offset(p->buffer, offset);
-			break;
-		}
 		case CHANGE_SYLL_TO_LAYOUT_1:
-		{
-			int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
-
-			// Shift fields to point to begin of word
-			p->buffer->set_offset(p->buffer, offset);
-
-			program_change_lang(p, 1);
-
-			int len = p->buffer->cur_pos - 1;
-			if (p->last_action == ACTION_AUTOCOMPLETION)
-				len = p->buffer->cur_pos;
-			program_send_string_silent(p, len);
-
-			// Revert fields back
-			p->buffer->unset_offset(p->buffer, offset);
-			break;
-		}
 		case CHANGE_SYLL_TO_LAYOUT_2:
-		{
-			int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
-
-			// Shift fields to point to begin of word
-			p->buffer->set_offset(p->buffer, offset);
-
-			program_change_lang(p, 2);
-
-			int len = p->buffer->cur_pos - 1;
-			if (p->last_action == ACTION_AUTOCOMPLETION)
-				len = p->buffer->cur_pos;
-			program_send_string_silent(p, len);
-
-			// Revert fields back
-			p->buffer->unset_offset(p->buffer, offset);
-			break;
-		}
 		case CHANGE_SYLL_TO_LAYOUT_3:
 		{
 			int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
@@ -3113,7 +2851,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			// Shift fields to point to begin of word
 			p->buffer->set_offset(p->buffer, offset);
 
-			program_change_lang(p, 3);
+			program_change_lang(p, action - CHANGE_SYLL_TO_LAYOUT_0);
 
 			int len = p->buffer->cur_pos - 1;
 			if (p->last_action == ACTION_AUTOCOMPLETION)
@@ -3130,32 +2868,11 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			break;
 		}
 		case CHANGE_STRING_TO_LAYOUT_0:
-		{
-			program_change_lang(p, 0);
-			//p->focus->update_events(p->focus, LISTEN_DONTGRAB_INPUT);	// Disable receiving events
-
-			program_send_string_silent(p, p->buffer->cur_pos);
-			break;
-		}
 		case CHANGE_STRING_TO_LAYOUT_1:
-		{
-			program_change_lang(p, 1);
-			//p->focus->update_events(p->focus, LISTEN_DONTGRAB_INPUT);	// Disable receiving events
-
-			program_send_string_silent(p, p->buffer->cur_pos);
-			break;
-		}
 		case CHANGE_STRING_TO_LAYOUT_2:
-		{
-			program_change_lang(p, 2);
-			//p->focus->update_events(p->focus, LISTEN_DONTGRAB_INPUT);	// Disable receiving events
-
-			program_send_string_silent(p, p->buffer->cur_pos);
-			break;
-		}
 		case CHANGE_STRING_TO_LAYOUT_3:
 		{
-			program_change_lang(p, 3);
+			program_change_lang(p, action - CHANGE_STRING_TO_LAYOUT_0);
 			//p->focus->update_events(p->focus, LISTEN_DONTGRAB_INPUT);	// Disable receiving events
 
 			program_send_string_silent(p, p->buffer->cur_pos);
