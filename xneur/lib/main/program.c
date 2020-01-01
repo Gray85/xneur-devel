@@ -313,7 +313,7 @@ static void program_layout_update(struct _program *p)
 
 	fetch_window_name(text_to_find, p->last_window);
 	// Remove layout for old window
-	for (int lang = 0; lang < xconfig->handle->total_languages; lang++)
+	for (int lang = 0; lang < p->handle->total_languages; lang++)
 	{
 		sprintf(window_layout, "%s %d", text_to_find, lang);
 
@@ -330,7 +330,7 @@ static void program_layout_update(struct _program *p)
 	fetch_window_name(text_to_find, p->focus->owner_window);
 
 	// Restore layout for new window
-	for (int lang = 0; lang < xconfig->handle->total_languages; lang++)
+	for (int lang = 0; lang < p->handle->total_languages; lang++)
 	{
 		sprintf(window_layout, "%s %d", text_to_find, lang);
 		if (!p->window_layouts->exist(p->window_layouts, window_layout, BY_PLAIN))
@@ -370,8 +370,8 @@ static void program_update(struct _program *p)
 
 	program_layout_update(p);
 
-	p->buffer->save_and_clear(p->buffer, xconfig->handle, p->last_window);
-	p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+	p->buffer->save_and_clear(p->buffer, p->handle, p->last_window);
+	p->correction_buffer->clear(p->correction_buffer, p->handle);
 	p->correction_action = ACTION_NONE;
 
 	if (status == FOCUS_NONE)
@@ -426,7 +426,7 @@ static void program_process_input(struct _program *p)
 					log_message(TRACE, _("Received Property Notify (layout switch event) (event type %d)"), type);
 
 					// Flush string
-					//p->buffer->clear(p->buffer, xconfig->handle);
+					//p->buffer->clear(p->buffer, p->handle);
 				}
 				break;
 			}
@@ -439,12 +439,12 @@ static void program_process_input(struct _program *p)
 				}
 				struct _xneur_handle *new_handle = xneur_handle_create();
 				int layouts_changed = FALSE;
-				if (new_handle->total_languages == xconfig->handle->total_languages)
+				if (new_handle->total_languages == p->handle->total_languages)
 				{
 					for (int i = 0; i < new_handle->total_languages; i++)
 					{
-						//log_message(TRACE, "%s %s",xconfig->handle->languages[i].name, new_handle->languages[i].name);
-						if (strcmp(xconfig->handle->languages[i].name, new_handle->languages[i].name) == 0)
+						//log_message(TRACE, "%s %s",p->handle->languages[i].name, new_handle->languages[i].name);
+						if (strcmp(p->handle->languages[i].name, new_handle->languages[i].name) == 0)
 							continue;
 
 						layouts_changed = TRUE;
@@ -461,39 +461,39 @@ static void program_process_input(struct _program *p)
 
 				log_message(TRACE, _("Received MappingNotify (event type %d)"), type);
 
-				p->buffer->uninit(p->buffer, xconfig->handle);
-				p->correction_buffer->uninit(p->correction_buffer, xconfig->handle);
+				p->buffer->uninit(p->buffer, p->handle);
+				p->correction_buffer->uninit(p->correction_buffer, p->handle);
 
 				if (main_window->keymap) {//TODO: may be check is unnecessary... but this need check
 					main_window->keymap->uninit(main_window->keymap);
 				}
 
-				xneur_handle_destroy(xconfig->handle);
-				xconfig->handle = xneur_handle_create();
+				xneur_handle_destroy(p->handle);
+				p->handle = xneur_handle_create();
 
 				//TODO: Early, keymap_init set locale to "", but now it doesn't do that. Maybe this was important... need check
-				main_window->keymap = keymap_init(xconfig->handle, main_window->display);
-				p->buffer = buffer_init(xconfig->handle, main_window->keymap);
+				main_window->keymap = keymap_init(p->handle, main_window->display);
+				p->buffer = buffer_init(p->handle, main_window->keymap);
 
-				p->correction_buffer = buffer_init(xconfig->handle, main_window->keymap);
+				p->correction_buffer = buffer_init(p->handle, main_window->keymap);
 				p->correction_action = ACTION_NONE;
 
-				//log_message (DEBUG, _("Now layouts count %d"), xconfig->handle->total_languages);
+				//log_message (DEBUG, _("Now layouts count %d"), p->handle->total_languages);
 				log_message(LOG, _("Keyboard layouts present in system:"));
-				for (int lang = 0; lang < xconfig->handle->total_languages; lang++)
+				for (int lang = 0; lang < p->handle->total_languages; lang++)
 				{
-					if (xconfig->handle->languages[lang].excluded)
-						log_message(LOG, _("   Excluded XKB Group '%s', layout '%s', group '%d'"), xconfig->handle->languages[lang].name, xconfig->handle->languages[lang].dir, lang);
+					if (p->handle->languages[lang].excluded)
+						log_message(LOG, _("   Excluded XKB Group '%s', layout '%s', group '%d'"), p->handle->languages[lang].name, p->handle->languages[lang].dir, lang);
 					else
-						log_message(LOG, _("   Included XKB Group '%s', layout '%s', group '%d'"), xconfig->handle->languages[lang].name, xconfig->handle->languages[lang].dir, lang);
+						log_message(LOG, _("   Included XKB Group '%s', layout '%s', group '%d'"), p->handle->languages[lang].name, p->handle->languages[lang].dir, lang);
 
-					char *lang_name = xconfig->handle->languages[lang].name;
+					char *lang_name = p->handle->languages[lang].name;
 
-					log_message(DEBUG, _("      %s dictionary has %d records"), lang_name, xconfig->handle->languages[lang].dictionary->data_count);
-					log_message(DEBUG, _("      %s proto has %d records"), lang_name, xconfig->handle->languages[lang].proto->data_count);
-					log_message(DEBUG, _("      %s big proto has %d records"), lang_name, xconfig->handle->languages[lang].big_proto->data_count);
+					log_message(DEBUG, _("      %s dictionary has %d records"), lang_name, p->handle->languages[lang].dictionary->data_count);
+					log_message(DEBUG, _("      %s proto has %d records"), lang_name, p->handle->languages[lang].proto->data_count);
+					log_message(DEBUG, _("      %s big proto has %d records"), lang_name, p->handle->languages[lang].big_proto->data_count);
 			#ifdef WITH_ASPELL
-					if (xconfig->handle->has_spell_checker[lang])
+					if (p->handle->has_spell_checker[lang])
 					{
 						log_message(DEBUG, _("      %s aspell dictionary loaded"), lang_name);
 					}
@@ -503,7 +503,7 @@ static void program_process_input(struct _program *p)
 					}
 			#endif
 			#ifdef WITH_ENCHANT
-					if (xconfig->handle->enchant_dicts[lang])
+					if (p->handle->enchant_dicts[lang])
 					{
 						log_message(DEBUG, _("      %s enchant wrapper dictionary loaded"), lang_name);
 					}
@@ -513,7 +513,7 @@ static void program_process_input(struct _program *p)
 					}
 			#endif
 				}
-				log_message(LOG, _("Total %d keyboard layouts detected"), xconfig->handle->total_languages);
+				log_message(LOG, _("Total %d keyboard layouts detected"), p->handle->total_languages);
 
 				break;
 			}
@@ -611,8 +611,8 @@ static void program_process_input(struct _program *p)
 							// Clear buffer only when clicked left button
 							//if (xi_event->detail == 1)
 							//{
-							p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
-							p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+							p->buffer->save_and_clear(p->buffer, p->handle, p->focus->owner_window);
+							p->correction_buffer->clear(p->correction_buffer, p->handle);
 							p->correction_action = ACTION_NONE;
 							if ((Window)p->focus->get_focused_window(p->focus) != (Window)p->focus->owner_window)
 							{
@@ -696,7 +696,7 @@ static void program_process_input(struct _program *p)
 
 static void program_change_lang(struct _program *p, int new_lang)
 {
-	log_message(DEBUG, _("Changing language from %s to %s"), xconfig->handle->languages[get_curr_keyboard_group()].name, xconfig->handle->languages[new_lang].name);
+	log_message(DEBUG, _("Changing language from %s to %s"), p->handle->languages[get_curr_keyboard_group()].name, p->handle->languages[new_lang].name);
 	p->buffer->set_lang_mask(p->buffer, new_lang);
 	set_keyboard_group(new_lang);
 	p->last_layout = new_lang;
@@ -764,7 +764,7 @@ static void program_process_selection_notify(struct _program *p)
 	if (p->action_mode == ACTION_TRANSLIT_SELECTED)
 		convert_text_to_translit(&event_text);
 
-	p->buffer->set_content(p->buffer, xconfig->handle, event_text);
+	p->buffer->set_content(p->buffer, p->handle, event_text);
 	if (event_text != NULL)
 		free(event_text);
 
@@ -772,17 +772,17 @@ static void program_process_selection_notify(struct _program *p)
 	{
 		case ACTION_CHANGE_SELECTED:
 		{
-			p->buffer->rotate_layout(p->buffer, xconfig->handle);
+			p->buffer->rotate_layout(p->buffer, p->handle);
 
 			if (xconfig->rotate_layout_after_convert)
-				set_next_keyboard_group(xconfig->handle);
+				set_next_keyboard_group(p->handle);
 
 			show_notify(NOTIFY_CHANGE_SELECTED, NULL);
 			break;
 		}
 		case ACTION_CHANGE_CLIPBOARD:
 		{
-			p->buffer->rotate_layout(p->buffer, xconfig->handle);
+			p->buffer->rotate_layout(p->buffer, p->handle);
 
 			show_notify(NOTIFY_CHANGE_CLIPBOARD, NULL);
 			break;
@@ -819,7 +819,7 @@ static void program_process_selection_notify(struct _program *p)
 		}
 		case ACTION_PREVIEW_CHANGE_SELECTED:
 		{
-			p->buffer->rotate_layout(p->buffer, xconfig->handle);
+			p->buffer->rotate_layout(p->buffer, p->handle);
 
 			char *string = p->buffer->get_utf_string(p->buffer);
 			show_notify(NOTIFY_PREVIEW_CHANGE_SELECTED, string);
@@ -829,7 +829,7 @@ static void program_process_selection_notify(struct _program *p)
 		}
 		case ACTION_PREVIEW_CHANGE_CLIPBOARD:
 		{
-			p->buffer->rotate_layout(p->buffer, xconfig->handle);
+			p->buffer->rotate_layout(p->buffer, p->handle);
 
 			char *string = p->buffer->get_utf_string(p->buffer);
 			show_notify(NOTIFY_PREVIEW_CHANGE_CLIPBOARD, string);
@@ -849,7 +849,7 @@ static void program_process_selection_notify(struct _program *p)
 			p->event->send_selection(p->event, p->buffer->cur_pos);
 	}
 
-	p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
+	p->buffer->save_and_clear(p->buffer, p->handle, p->focus->owner_window);
 
 	p->action_mode = ACTION_NONE;
 }
@@ -997,15 +997,15 @@ static void program_perform_auto_action(struct _program *p, int action)
 			if (xconfig->flush_buffer_when_press_escape)
 				if (p->event->get_cur_keysym(p->event) == XK_Escape)
 				{
-					p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
-					p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+					p->buffer->save_and_clear(p->buffer, p->handle, p->focus->owner_window);
+					p->correction_buffer->clear(p->correction_buffer, p->handle);
 				}
 			return;
 		}
 		case KLB_CLEAR:
 		{
-			p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
-			p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+			p->buffer->save_and_clear(p->buffer, p->handle, p->focus->owner_window);
+			p->correction_buffer->clear(p->correction_buffer, p->handle);
 			return;
 		}
 		case KLB_DEL_SYM:
@@ -1016,8 +1016,8 @@ static void program_perform_auto_action(struct _program *p, int action)
 				p->last_action = ACTION_NONE;
 			}
 
-			string->del_symbol(string, xconfig->handle);
-			p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
+			string->del_symbol(string, p->handle);
+			p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 			return;
 		}
 		case KLB_ENTER:
@@ -1027,8 +1027,8 @@ static void program_perform_auto_action(struct _program *p, int action)
 		{
 			if (((action == KLB_ENTER) || (action == KLB_TAB))&& xconfig->flush_buffer_when_press_enter)
 			{
-				p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
-				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+				p->buffer->save_and_clear(p->buffer, p->handle, p->focus->owner_window);
+				p->correction_buffer->clear(p->correction_buffer, p->handle);
 			}
 			if (((action == KLB_ENTER && xconfig->troubleshoot_enter) || (action == KLB_TAB && xconfig->troubleshoot_tab)) &&
 			     !xconfig->flush_buffer_when_press_enter)
@@ -1048,8 +1048,8 @@ static void program_perform_auto_action(struct _program *p, int action)
 
 				// Add symbol to internal bufer
 				int modifier_mask = groups[get_curr_keyboard_group()] | p->event->get_cur_modifiers(p->event);
-				p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
-				p->correction_buffer->add_symbol(p->correction_buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
+				p->buffer->add_symbol(p->buffer, p->handle, sym, p->event->event.xkey.keycode, modifier_mask);
+				p->correction_buffer->add_symbol(p->correction_buffer, p->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 
 				// Correct space before punctuation
 				program_check_space_before_punctuation(p);
@@ -1117,8 +1117,8 @@ static void program_perform_auto_action(struct _program *p, int action)
 			// Add symbol to internal bufer
 			p->event->event = p->event->default_event;
 			int modifier_mask = groups[get_curr_keyboard_group()] | p->event->get_cur_modifiers(p->event);
-			p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
-			p->correction_buffer->add_symbol(p->correction_buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
+			p->buffer->add_symbol(p->buffer, p->handle, sym, p->event->event.xkey.keycode, modifier_mask);
+			p->correction_buffer->add_symbol(p->correction_buffer, p->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 
 			//p->check_space_with_punctuation_mark(p);
 
@@ -1178,9 +1178,9 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 			do
 			{
 				next_lang++;
-				if (next_lang >= xconfig->handle->total_languages)
+				if (next_lang >= p->handle->total_languages)
 					next_lang = 0;
-			} while (xconfig->handle->languages[next_lang].excluded && (next_lang != curr_lang));
+			} while (p->handle->languages[next_lang].excluded && (next_lang != curr_lang));
 
 			if (next_lang == curr_lang)
 				break;
@@ -1214,9 +1214,9 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 			do
 			{
 				next_lang++;
-				if (next_lang >= xconfig->handle->total_languages)
+				if (next_lang >= p->handle->total_languages)
 					next_lang = 0;
-			} while (xconfig->handle->languages[next_lang].excluded && (next_lang != curr_lang));
+			} while (p->handle->languages[next_lang].excluded && (next_lang != curr_lang));
 
 			if (next_lang == curr_lang)
 				break;
@@ -1332,13 +1332,13 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 		}
 		case ACTION_ROTATE_LAYOUT:
 		{
-			set_next_keyboard_group(xconfig->handle);
+			set_next_keyboard_group(p->handle);
 			p->event->default_event.xkey.keycode = 0;
 			break;
 		}
 		case ACTION_ROTATE_LAYOUT_BACK:
 		{
-			set_prev_keyboard_group(xconfig->handle);
+			set_prev_keyboard_group(p->handle);
 			p->event->default_event.xkey.keycode = 0;
 			break;
 		}
@@ -1351,8 +1351,8 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 					p->event->send_xkey(p->event, XKeysymToKeycode(main_window->display, XK_space), p->event->event.xkey.state);
 				p->last_action = ACTION_NONE;
 
-				p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
-				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+				p->buffer->save_and_clear(p->buffer, p->handle, p->focus->owner_window);
+				p->correction_buffer->clear(p->correction_buffer, p->handle);
 
 				break;
 			}
@@ -1362,7 +1362,7 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 			p->event->event = p->event->default_event;
 			char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 			int modifier_mask =  p->event->get_cur_modifiers(p->event);
-			p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
+			p->buffer->add_symbol(p->buffer, p->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 
 			break;
 		}
@@ -1380,7 +1380,7 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 			p->event->event = p->event->default_event;
 			char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 			int modifier_mask =  p->event->get_cur_modifiers(p->event);
-			p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
+			p->buffer->add_symbol(p->buffer, p->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 
 			break;
 		}
@@ -1399,12 +1399,12 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 			// Insert Date
 			log_message(DEBUG, _("Insert date '%s'."), date);
 
-			p->buffer->set_content(p->buffer, xconfig->handle, date);
+			p->buffer->set_content(p->buffer, p->handle, date);
 
 			program_change_word(p, CHANGE_INS_DATE);
 
-			p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
-			p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+			p->buffer->save_and_clear(p->buffer, p->handle, p->focus->owner_window);
+			p->correction_buffer->clear(p->correction_buffer, p->handle);
 
 			p->event->default_event.xkey.keycode = 0;
 
@@ -1444,7 +1444,7 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 				{
 					KeyCode *dummy_kc = malloc((strlen(replacement)+1) * sizeof(KeyCode));
 					int *dummy_kc_mod = malloc((strlen(replacement)+1) * sizeof(int));
-					main_window->keymap->convert_text_to_ascii(main_window->keymap, xconfig->handle, replacement, dummy_kc, dummy_kc_mod);
+					main_window->keymap->convert_text_to_ascii(main_window->keymap, p->handle, replacement, dummy_kc, dummy_kc_mod);
 					if (dummy_kc != NULL)
 						free(dummy_kc);
 					if (dummy_kc_mod != NULL)
@@ -1452,7 +1452,7 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 
 					dummy_kc = malloc((strlen(word)+1) * sizeof(KeyCode));
 					dummy_kc_mod = malloc((strlen(word)+1) * sizeof(int));
-					main_window->keymap->convert_text_to_ascii(main_window->keymap, xconfig->handle, word, dummy_kc, dummy_kc_mod);
+					main_window->keymap->convert_text_to_ascii(main_window->keymap, p->handle, word, dummy_kc, dummy_kc_mod);
 					if (dummy_kc != NULL)
 						free(dummy_kc);
 					if (dummy_kc_mod != NULL)
@@ -1472,13 +1472,13 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 				if (p->last_action == ACTION_AUTOCOMPLETION)
 					backspaces_count++;
 				p->event->send_backspaces(p->event, backspaces_count);
-				p->buffer->set_content(p->buffer, xconfig->handle, string);
+				p->buffer->set_content(p->buffer, p->handle, string);
 
 				program_change_word(p, CHANGE_ABBREVIATION);
 
 				show_notify(NOTIFY_REPLACE_ABBREVIATION, NULL);
-				p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
-				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+				p->buffer->save_and_clear(p->buffer, p->handle, p->focus->owner_window);
+				p->correction_buffer->clear(p->correction_buffer, p->handle);
 
 				//Incapsulate to p->event->clear_code() or smth else
 				p->event->default_event.xkey.keycode = 0;
@@ -1506,7 +1506,7 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 
 static int program_check_lang_last_word(struct _program *p)
 {
-	if (xconfig->handle->languages[get_curr_keyboard_group()].excluded)
+	if (p->handle->languages[get_curr_keyboard_group()].excluded)
 		return FALSE;
 
 	if (p->app_forced_mode == FORCE_MODE_MANUAL)
@@ -1530,11 +1530,11 @@ static int program_check_lang_last_word(struct _program *p)
 	int new_lang = NO_LANGUAGE;
 	if (xconfig->check_similar_words)
 	{
-		new_lang = check_lang_with_similar_words(xconfig->handle, p->buffer, cur_lang);
+		new_lang = check_lang_with_similar_words(p->handle, p->buffer, cur_lang);
 	}
 	else
 	{
-		new_lang = check_lang(xconfig->handle, p->buffer, cur_lang);
+		new_lang = check_lang(p->handle, p->buffer, cur_lang);
 	}
 
 	if (new_lang == NO_LANGUAGE)
@@ -1568,7 +1568,7 @@ static int program_check_lang_last_word(struct _program *p)
 
 static int program_check_lang_last_syllable(struct _program *p)
 {
-	if (xconfig->handle->languages[get_curr_keyboard_group()].excluded)
+	if (p->handle->languages[get_curr_keyboard_group()].excluded)
 		return FALSE;
 
 	if (p->app_forced_mode == FORCE_MODE_MANUAL)
@@ -1585,7 +1585,7 @@ static int program_check_lang_last_syllable(struct _program *p)
 		return FALSE;
 
 	int cur_lang = get_curr_keyboard_group();
-	int new_lang = check_lang(xconfig->handle, p->buffer, cur_lang);
+	int new_lang = check_lang(p->handle, p->buffer, cur_lang);
 
 	if (new_lang == NO_LANGUAGE)
 	{
@@ -1632,7 +1632,7 @@ static void program_check_caps_last_word(struct _program *p)
 			return;
 	}
 
-	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, p->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1670,7 +1670,7 @@ static void program_check_tcl_last_word(struct _program *p)
 			return;
 	}
 
-	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, p->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1714,7 +1714,7 @@ static void program_check_two_space(struct _program *p)
 
 	free(word);
 
-	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, p->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1737,7 +1737,7 @@ static void program_check_two_minus(struct _program *p)
 
 	log_message (DEBUG, _("Find two minus, correction with a dash..."));
 
-	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, p->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1768,7 +1768,7 @@ static void program_check_copyright(struct _program *p)
 
 	log_message (DEBUG, _("Find (c), correction with a copyright sign..."));
 
-	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, p->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1790,7 +1790,7 @@ static void program_check_registered(struct _program *p)
 
 	log_message (DEBUG, _("Find (r), correction with a registered sign..."));
 
-	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, p->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1813,7 +1813,7 @@ static void program_check_trademark(struct _program *p)
 
 	log_message (DEBUG, _("Find (tm), correction with a trademark sign..."));
 
-	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, p->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1847,7 +1847,7 @@ static void program_check_ellipsis(struct _program *p)
 
 	log_message (DEBUG, _("Find three points, correction with a ellipsis sign..."));
 
-	p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
+	p->correction_buffer->set_content(p->correction_buffer, p->handle, p->buffer->content);
 
 	p->correction_action = CORRECTION_NONE;
 
@@ -1889,19 +1889,19 @@ static void program_check_space_before_punctuation(struct _program *p)
 
 	log_message(DEBUG, _("Find spaces before punctuation, correction..."));
 
-	p->buffer->del_symbol(p->buffer, xconfig->handle);
-	p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
+	p->buffer->del_symbol(p->buffer, p->handle);
+	p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 	while (p->buffer->content[p->buffer->cur_pos-1] == ' ')
 	{
 		p->event->send_backspaces(p->event, 1);
-		p->buffer->del_symbol(p->buffer, xconfig->handle);
-		p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
+		p->buffer->del_symbol(p->buffer, p->handle);
+		p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 	}
 
 	p->event->event = p->event->default_event;
 	char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 	int modifier_mask = groups[get_curr_keyboard_group()] | p->event->get_cur_modifiers(p->event);
-	p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
+	p->buffer->add_symbol(p->buffer, p->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 
 	free(text);
 }
@@ -1939,36 +1939,36 @@ static void program_check_space_with_bracket(struct _program *p)
 	{
 		log_message(DEBUG, _("Find no space before left bracket, correction..."));
 
-		p->buffer->del_symbol(p->buffer, xconfig->handle);
-		p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
+		p->buffer->del_symbol(p->buffer, p->handle);
+		p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 		p->event->event = p->event->default_event;
 		p->event->event.xkey.keycode = XKeysymToKeycode(main_window->display, XK_space);
 		p->event->send_next_event(p->event);
 		int modifier_mask = groups[get_curr_keyboard_group()];
-		p->buffer->add_symbol(p->buffer, xconfig->handle, ' ', p->event->event.xkey.keycode, modifier_mask);
+		p->buffer->add_symbol(p->buffer, p->handle, ' ', p->event->event.xkey.keycode, modifier_mask);
 
 		p->event->event = p->event->default_event;
 		char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 		modifier_mask |=  p->event->get_cur_modifiers(p->event);
-		p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
+		p->buffer->add_symbol(p->buffer, p->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 	}
 
 	if (text[text_len - 1] == ')')
 	{
 		log_message(DEBUG, _("Find spaces before right bracket, correction..."));
 
-		p->buffer->del_symbol(p->buffer, xconfig->handle);
-		p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
+		p->buffer->del_symbol(p->buffer, p->handle);
+		p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 		while (p->buffer->content[p->buffer->cur_pos - 1] == ' ')
 		{
 			p->event->send_backspaces(p->event, 1);
-			p->buffer->del_symbol(p->buffer, xconfig->handle);
-			p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
+			p->buffer->del_symbol(p->buffer, p->handle);
+			p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 		}
 		p->event->event = p->event->default_event;
 		char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 		int modifier_mask = groups[get_curr_keyboard_group()] | p->event->get_cur_modifiers(p->event);
-		p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
+		p->buffer->add_symbol(p->buffer, p->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 	}
 
 	free(text);
@@ -2001,18 +2001,18 @@ static void program_check_brackets_with_symbols(struct _program *p)
 		}
 		log_message(DEBUG, _("Find no spaces after right bracket, correction..."));
 
-		p->buffer->del_symbol(p->buffer, xconfig->handle);
-		p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
+		p->buffer->del_symbol(p->buffer, p->handle);
+		p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 		p->event->event = p->event->default_event;
 		p->event->event.xkey.keycode = XKeysymToKeycode(main_window->display, XK_space);
 		p->event->send_next_event(p->event);
 		int modifier_mask = groups[get_curr_keyboard_group()];
-		p->buffer->add_symbol(p->buffer, xconfig->handle, ' ', p->event->event.xkey.keycode, modifier_mask);
+		p->buffer->add_symbol(p->buffer, p->handle, ' ', p->event->event.xkey.keycode, modifier_mask);
 
 		p->event->event = p->event->default_event;
 		sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 		modifier_mask = groups[get_curr_keyboard_group()] | p->event->get_cur_modifiers(p->event);
-		p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
+		p->buffer->add_symbol(p->buffer, p->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 	}
 
 	if (text[text_len - 2] != ' ')
@@ -2037,18 +2037,18 @@ static void program_check_brackets_with_symbols(struct _program *p)
 
 	log_message(DEBUG, _("Find spaces after left bracket, correction..."));
 
-	p->buffer->del_symbol(p->buffer, xconfig->handle);
-	p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
+	p->buffer->del_symbol(p->buffer, p->handle);
+	p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 	for (int i = 0; i < space_count; i++)
 	{
 		p->event->send_backspaces(p->event, 1);
-		p->buffer->del_symbol(p->buffer, xconfig->handle);
-		p->correction_buffer->del_symbol(p->correction_buffer, xconfig->handle);
+		p->buffer->del_symbol(p->buffer, p->handle);
+		p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 	}
 	p->event->event = p->event->default_event;
 	char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
 	int modifier_mask = groups[get_curr_keyboard_group()] | p->event->get_cur_modifiers(p->event);
-	p->buffer->add_symbol(p->buffer, xconfig->handle, sym, p->event->event.xkey.keycode, modifier_mask);
+	p->buffer->add_symbol(p->buffer, p->handle, sym, p->event->event.xkey.keycode, modifier_mask);
 
 	free(text);
 }
@@ -2110,7 +2110,7 @@ static void program_check_capital_letter_after_dot(struct _program *p)
 	}
 	free (text);
 
-	text = p->buffer->get_utf_string_on_kbd_group(p->buffer, xconfig->handle, get_curr_keyboard_group());
+	text = p->buffer->get_utf_string_on_kbd_group(p->buffer, p->handle, get_curr_keyboard_group());
 	if (text == NULL)
 		return;
 
@@ -2163,7 +2163,7 @@ static void program_check_pattern(struct _program *p)
 	/*
 	if (selection)
 	{
-	struct _list_char* list_alike = xconfig->handle->languages[lang].pattern->alike(xconfig->handle->languages[lang].pattern, word);
+	struct _list_char* list_alike = p->handle->languages[lang].pattern->alike(p->handle->languages[lang].pattern, word);
 	if (list_alike != NULL)
 	{
 		for (int i = 0; i < list_alike->data_count; i++)
@@ -2181,7 +2181,7 @@ static void program_check_pattern(struct _program *p)
 
 	}*/
 
-	struct _list_char_data *pattern_data = xconfig->handle->languages[lang].pattern->find_alike(xconfig->handle->languages[lang].pattern, word);
+	struct _list_char_data *pattern_data = p->handle->languages[lang].pattern->find_alike(p->handle->languages[lang].pattern, word);
 	if (pattern_data == NULL)
 	{
 		p->last_action = ACTION_NONE;
@@ -2191,13 +2191,13 @@ static void program_check_pattern(struct _program *p)
 
 	log_message (DEBUG, _("Recognition word '%s' from text '%s' (layout %d), autocompletation..."), pattern_data->string, word, get_curr_keyboard_group());
 
-	struct _buffer *tmp_buffer = buffer_init(xconfig->handle, main_window->keymap);
+	struct _buffer *tmp_buffer = buffer_init(p->handle, main_window->keymap);
 
-	tmp_buffer->set_content(tmp_buffer, xconfig->handle, pattern_data->string + strlen(word)*sizeof(char));
+	tmp_buffer->set_content(tmp_buffer, p->handle, pattern_data->string + strlen(word)*sizeof(char));
 
 	if (tmp_buffer->cur_pos == 0)
 	{
-		tmp_buffer->uninit(tmp_buffer, xconfig->handle);
+		tmp_buffer->uninit(tmp_buffer, p->handle);
 		p->last_action = ACTION_NONE;
 		free (word);
 		return;
@@ -2211,7 +2211,7 @@ static void program_check_pattern(struct _program *p)
 
 	p->event->default_event.xkey.keycode = 0;
 
-	tmp_buffer->uninit(tmp_buffer, xconfig->handle);
+	tmp_buffer->uninit(tmp_buffer, p->handle);
 
 	p->last_action = ACTION_AUTOCOMPLETION;
 	p->last_pattern_id = 0;
@@ -2251,7 +2251,7 @@ static void program_rotate_pattern(struct _program *p)
 		return;
 	}
 
-	struct _list_char* list_alike = xconfig->handle->languages[lang].pattern->alike(xconfig->handle->languages[lang].pattern, word);
+	struct _list_char* list_alike = p->handle->languages[lang].pattern->alike(p->handle->languages[lang].pattern, word);
 	if (list_alike == NULL)
 	{
 		free (word);
@@ -2277,14 +2277,14 @@ static void program_rotate_pattern(struct _program *p)
 
     log_message (DEBUG, _("Next autocompletion word '%s' from text '%s' (layout %d), rotate autocompletation..."), list_alike->data[p->last_pattern_id].string, word, get_curr_keyboard_group());
 
-	struct _buffer *tmp_buffer = buffer_init(xconfig->handle, main_window->keymap);
+	struct _buffer *tmp_buffer = buffer_init(p->handle, main_window->keymap);
 
-	tmp_buffer->set_content(tmp_buffer, xconfig->handle, list_alike->data[p->last_pattern_id].string + strlen(word)*sizeof(char));
+	tmp_buffer->set_content(tmp_buffer, p->handle, list_alike->data[p->last_pattern_id].string + strlen(word)*sizeof(char));
 
 	if (tmp_buffer->cur_pos == 0)
 	{
 		list_alike->uninit(list_alike);
-		tmp_buffer->uninit(tmp_buffer, xconfig->handle);
+		tmp_buffer->uninit(tmp_buffer, p->handle);
 		p->last_action = ACTION_NONE;
 		free (word);
 		return;
@@ -2298,7 +2298,7 @@ static void program_rotate_pattern(struct _program *p)
 
 	p->event->default_event.xkey.keycode = 0;
 
-	tmp_buffer->uninit(tmp_buffer, xconfig->handle);
+	tmp_buffer->uninit(tmp_buffer, p->handle);
 
 	p->last_action = ACTION_AUTOCOMPLETION;
 
@@ -2314,7 +2314,7 @@ static void program_check_misprint(struct _program *p)
 		return;
 
 	int lang = get_curr_keyboard_group ();
-	if (xconfig->handle->languages[lang].disable_auto_detection || xconfig->handle->languages[lang].excluded)
+	if (p->handle->languages[lang].disable_auto_detection || p->handle->languages[lang].excluded)
 		return;
 
 	char *word = strdup(p->buffer->get_last_word(p->buffer, p->buffer->i18n_content[lang].content_unchanged));
@@ -2329,7 +2329,7 @@ static void program_check_misprint(struct _program *p)
 		return;
 	}
 
-	if (xconfig->handle->languages[lang].dictionary->exist(xconfig->handle->languages[lang].dictionary, word, BY_REGEXP))
+	if (p->handle->languages[lang].dictionary->exist(p->handle->languages[lang].dictionary, word, BY_REGEXP))
 	{
 		free(word);
 		return;
@@ -2350,7 +2350,7 @@ static void program_check_misprint(struct _program *p)
 #ifdef WITH_ENCHANT
 	size_t count = 0;
 
-	if (!xconfig->handle->has_enchant_checker[lang])
+	if (!p->handle->has_enchant_checker[lang])
 	{
 		free(word);
 		return;
@@ -2362,13 +2362,13 @@ static void program_check_misprint(struct _program *p)
 		return;
 	}
 
-	if (!enchant_dict_check(xconfig->handle->enchant_dicts[lang], word+offset, strlen(word+offset)))
+	if (!enchant_dict_check(p->handle->enchant_dicts[lang], word+offset, strlen(word+offset)))
 	{
 		free(word);
 		return;
 	}
 
-	char **suggs = enchant_dict_suggest (xconfig->handle->enchant_dicts[lang], word+offset, strlen(word+offset), &count);
+	char **suggs = enchant_dict_suggest (p->handle->enchant_dicts[lang], word+offset, strlen(word+offset), &count);
 	if (count > 0)
 	{
 
@@ -2386,7 +2386,7 @@ static void program_check_misprint(struct _program *p)
 				int tmp_levenshtein = levenshtein(word+offset, suggs[i]);
 				if (tmp_levenshtein == min_levenshtein)
 				{
-					if (xconfig->handle->languages[lang].pattern->exist(xconfig->handle->languages[lang].pattern, suggs[i], BY_PLAIN))
+					if (p->handle->languages[lang].pattern->exist(p->handle->languages[lang].pattern, suggs[i], BY_PLAIN))
 					{
 						possible_word = strdup(suggs[i]);
 						break;
@@ -2398,21 +2398,21 @@ static void program_check_misprint(struct _program *p)
 		}
 	}
 
-	enchant_dict_free_string_list(xconfig->handle->enchant_dicts[lang], suggs);
+	enchant_dict_free_string_list(p->handle->enchant_dicts[lang], suggs);
 #endif
 
 #ifdef WITH_ASPELL
-	if (!xconfig->handle->has_spell_checker[lang])
+	if (!p->handle->has_spell_checker[lang])
 	{
 		free(word);
 		return;
 	}
-	if (aspell_speller_check(xconfig->handle->spell_checkers[lang], word+offset, strlen(word+offset)))
+	if (aspell_speller_check(p->handle->spell_checkers[lang], word+offset, strlen(word+offset)))
 	{
 		free(word);
 		return;
 	}
-	const AspellWordList *suggestions = aspell_speller_suggest (xconfig->handle->spell_checkers[lang], (const char *) word+offset, strlen(word+offset));
+	const AspellWordList *suggestions = aspell_speller_suggest (p->handle->spell_checkers[lang], (const char *) word+offset, strlen(word+offset));
 	if (! suggestions)
 	{
 		free(word);
@@ -2441,7 +2441,7 @@ static void program_check_misprint(struct _program *p)
 			{
 				if (first_sugg == NULL)
 					first_sugg = strdup(sugg_word);
-				if (xconfig->handle->languages[lang].pattern->exist(xconfig->handle->languages[lang].pattern, sugg_word, BY_PLAIN))
+				if (p->handle->languages[lang].pattern->exist(p->handle->languages[lang].pattern, sugg_word, BY_PLAIN))
 				{
 					possible_word = strdup(sugg_word);
 					break;
@@ -2468,7 +2468,7 @@ static void program_check_misprint(struct _program *p)
 
 		log_message (DEBUG, _("Found a misprint , correction '%s' to '%s'..."), word+offset, possible_word);
 
-		p->correction_buffer->set_content(p->correction_buffer, xconfig->handle, p->buffer->content);
+		p->correction_buffer->set_content(p->correction_buffer, p->handle, p->buffer->content);
 
 		int backspaces_count = p->buffer->cur_pos - p->buffer->get_last_word_offset (p->buffer, p->buffer->content, p->buffer->cur_pos) - offset;
 		p->event->send_backspaces(p->event, backspaces_count);
@@ -2476,7 +2476,7 @@ static void program_check_misprint(struct _program *p)
 		if (p->last_action == ACTION_AUTOCOMPLETION)
 			p->event->send_backspaces(p->event, 1);
 		for (int i = 0; i < (backspaces_count); i++)
-			p->buffer->del_symbol(p->buffer, xconfig->handle);
+			p->buffer->del_symbol(p->buffer, p->handle);
 
 		int new_offset = p->buffer->cur_pos;
 		int possible_word_len = strlen(possible_word);
@@ -2501,7 +2501,7 @@ static void program_check_misprint(struct _program *p)
 		new_content = strcat(new_content, p->correction_buffer->i18n_content[lang].content_unchanged + strlen(p->correction_buffer->i18n_content[lang].content_unchanged) - finish_offset + 1);
 		// <<<
 
-		p->buffer->set_content(p->buffer, xconfig->handle, new_content);
+		p->buffer->set_content(p->buffer, p->handle, new_content);
 		free(new_content);
 
 		p->buffer->set_offset(p->buffer, new_offset);
@@ -2518,7 +2518,7 @@ static void program_check_misprint(struct _program *p)
 			free(notify_text);
 
 		p->correction_action = CORRECTION_MISPRINT;
-		//p->buffer->save_and_clear(p->buffer, xconfig->handle, p->focus->owner_window);
+		//p->buffer->save_and_clear(p->buffer, p->handle, p->focus->owner_window);
 
 		free(possible_word);
 	}
@@ -2578,14 +2578,14 @@ static void correct_word(struct _program *p, KeySym keysym, int keycount, enum _
 		XFlush(main_window->display);
 		XSync(main_window->display, TRUE);
 
-		p->buffer->clear(p->buffer, xconfig->handle);
+		p->buffer->clear(p->buffer, p->handle);
 		p->event->default_event.xkey.keycode = 0;
 	} else
 	if (p->correction_action == action)
 	{
 		p->event->send_spaces(p->event, keycount);
 
-		p->buffer->set_content(p->buffer, xconfig->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
+		p->buffer->set_content(p->buffer, p->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
 		p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
 
 		int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
@@ -2598,7 +2598,7 @@ static void correct_word(struct _program *p, KeySym keysym, int keycount, enum _
 		// Revert fields back
 		p->buffer->unset_offset(p->buffer, offset);
 
-		p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+		p->correction_buffer->clear(p->correction_buffer, p->handle);
 		p->correction_action = CORRECTION_NONE;
 	}
 }
@@ -2624,7 +2624,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			}
 			else if (p->correction_action == CORRECTION_INCIDENTAL_CAPS)
 			{
-				p->buffer->set_content(p->buffer, xconfig->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
+				p->buffer->set_content(p->buffer, p->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
 				p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
 
 				int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
@@ -2639,7 +2639,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				// Revert fields back
 				p->buffer->unset_offset(p->buffer, offset);
 
-				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+				p->correction_buffer->clear(p->correction_buffer, p->handle);
 				p->correction_action = CORRECTION_NONE;
 			}
 
@@ -2663,7 +2663,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			}
 			else if (p->correction_action == CORRECTION_TWO_CAPITAL_LETTER)
 			{
-				p->buffer->set_content(p->buffer, xconfig->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
+				p->buffer->set_content(p->buffer, p->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
 				p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
 
 				int offset = p->buffer->get_last_word_offset(p->buffer, p->buffer->content, p->buffer->cur_pos);
@@ -2678,7 +2678,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				// Revert fields back
 				p->buffer->unset_offset(p->buffer, offset);
 
-				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+				p->correction_buffer->clear(p->correction_buffer, p->handle);
 				p->correction_action = CORRECTION_NONE;
 			}
 			break;
@@ -2688,32 +2688,32 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			if (p->correction_action == CORRECTION_NONE)
 			{
 				p->event->send_backspaces(p->event, 1);
-				p->buffer->del_symbol(p->buffer, xconfig->handle);
+				p->buffer->del_symbol(p->buffer, p->handle);
 
 				KeyCode kc = 0;
 				int modifier = 0;
 				size_t sym_size = strlen(",");
 				int lang = get_curr_keyboard_group ();
-				p->buffer->keymap->get_ascii(p->buffer->keymap, xconfig->handle, ",", &lang, &kc, &modifier, &sym_size);
+				p->buffer->keymap->get_ascii(p->buffer->keymap, p->handle, ",", &lang, &kc, &modifier, &sym_size);
 				p->event->send_xkey(p->event, kc, modifier);
-				p->buffer->add_symbol(p->buffer, xconfig->handle, ',', kc, modifier);
+				p->buffer->add_symbol(p->buffer, p->handle, ',', kc, modifier);
 			}
 			else if (p->correction_action == CORRECTION_TWO_SPACE)
 			{
 				p->event->send_backspaces(p->event, 2);
-				p->buffer->del_symbol(p->buffer, xconfig->handle);
-				p->buffer->del_symbol(p->buffer, xconfig->handle);
+				p->buffer->del_symbol(p->buffer, p->handle);
+				p->buffer->del_symbol(p->buffer, p->handle);
 
 				p->event->send_spaces (p->event, 2);
 				KeyCode kc = 0;
 				int modifier = 0;
 				size_t sym_size = strlen(",");
 				int lang = get_curr_keyboard_group ();
-				p->buffer->keymap->get_ascii(p->buffer->keymap, xconfig->handle, " ", &lang, &kc, &modifier, &sym_size);
-				p->buffer->add_symbol(p->buffer, xconfig->handle, ' ', kc, modifier);
-				p->buffer->add_symbol(p->buffer, xconfig->handle, ' ', kc, modifier);
+				p->buffer->keymap->get_ascii(p->buffer->keymap, p->handle, " ", &lang, &kc, &modifier, &sym_size);
+				p->buffer->add_symbol(p->buffer, p->handle, ' ', kc, modifier);
+				p->buffer->add_symbol(p->buffer, p->handle, ' ', kc, modifier);
 
-				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+				p->correction_buffer->clear(p->correction_buffer, p->handle);
 				p->correction_action = CORRECTION_NONE;
 			}
 			break;
@@ -2752,20 +2752,20 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				XFlush(main_window->display);
 				XSync(main_window->display, TRUE);
 
-				p->buffer->clear(p->buffer, xconfig->handle);
+				p->buffer->clear(p->buffer, p->handle);
 			}
 			else if (p->correction_action == CORRECTION_TWO_MINUS)
 			{
 				p->event->send_backspaces(p->event, 2);
 
-				p->buffer->set_content(p->buffer, xconfig->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
+				p->buffer->set_content(p->buffer, p->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
 				p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
 
 				KeyCode kc = 0;
 				int modifier = 0;
 				size_t sym_size = strlen("-");
 				int lang = get_curr_keyboard_group ();
-				p->buffer->keymap->get_ascii(p->buffer->keymap, xconfig->handle, "-", &lang, &kc, &modifier, &sym_size);
+				p->buffer->keymap->get_ascii(p->buffer->keymap, p->handle, "-", &lang, &kc, &modifier, &sym_size);
 				p->event->send_xkey(p->event, kc, modifier);
 				p->event->send_xkey(p->event, kc, modifier);
 
@@ -2774,9 +2774,9 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				kc = 0;
 				modifier = 0;
 				sym_size = strlen(" ");
-				p->buffer->keymap->get_ascii(p->buffer->keymap, xconfig->handle, " ", &lang, &kc, &modifier, &sym_size);
+				p->buffer->keymap->get_ascii(p->buffer->keymap, p->handle, " ", &lang, &kc, &modifier, &sym_size);
 
-				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+				p->correction_buffer->clear(p->correction_buffer, p->handle);
 				p->correction_action = CORRECTION_NONE;
 			}
 			break;
@@ -2833,7 +2833,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			p->buffer->unset_offset(p->buffer, offset);
 
 			convert_text_to_translit(&text);
-			p->buffer->set_content(p->buffer, xconfig->handle, text);
+			p->buffer->set_content(p->buffer, p->handle, text);
 
 			if (text != NULL)
 				free(text);
@@ -2877,7 +2877,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			// Shift fields to point to begin of word
 			p->buffer->set_offset(p->buffer, offset);
 
-			p->buffer->rotate_layout(p->buffer, xconfig->handle);
+			p->buffer->rotate_layout(p->buffer, p->handle);
 
 			char *string = p->buffer->get_utf_string(p->buffer);
 			show_notify(NOTIFY_MANUAL_PREVIEW_CHANGE_WORD, string);
@@ -2937,7 +2937,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				int backspaces_count = p->buffer->cur_pos - p->correction_buffer->get_last_word_offset(p->correction_buffer, p->correction_buffer->content, p->correction_buffer->cur_pos);
 				int offset = p->buffer->cur_pos - p->correction_buffer->cur_pos;
 
-				p->buffer->set_content(p->buffer, xconfig->handle, p->correction_buffer->content);
+				p->buffer->set_content(p->buffer, p->handle, p->correction_buffer->content);
 				p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group ());
 
 				int cur_pos = p->buffer->cur_pos - backspaces_count + offset;
@@ -2946,7 +2946,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				program_send_string_silent(p, backspaces_count);
 				p->buffer->unset_offset(p->buffer, cur_pos);
 
-				p->correction_buffer->clear(p->correction_buffer, xconfig->handle);
+				p->correction_buffer->clear(p->correction_buffer, p->handle);
 
 				if (xconfig->educate)
 					program_add_word_to_dict(p, get_curr_keyboard_group());
@@ -2968,7 +2968,7 @@ static void program_add_word_to_dict(struct _program *p, int new_lang)
 		return;
 
 	// Remove word from all temp dictionary (excl. new language)
-	for (int lang = 0; lang < xconfig->handle->total_languages; lang++)
+	for (int lang = 0; lang < p->handle->total_languages; lang++)
 	{
 		if (lang != new_lang)
 		{
@@ -3000,7 +3000,7 @@ static void program_add_word_to_dict(struct _program *p, int new_lang)
 					break;
 			}
 
-			struct _list_char *curr_temp_dictionary = xconfig->handle->languages[lang].temp_dictionary;
+			struct _list_char *curr_temp_dictionary = p->handle->languages[lang].temp_dictionary;
 			if (curr_temp_dictionary->exist(curr_temp_dictionary, curr_word+offset, BY_REGEXP))
 			{
 				char *word_to_dict = malloc((strlen(curr_word+offset) + 7) * sizeof(char));
@@ -3014,7 +3014,7 @@ static void program_add_word_to_dict(struct _program *p, int new_lang)
 		}
 	}
 
-	struct _list_char *new_temp_dictionary = xconfig->handle->languages[new_lang].temp_dictionary;
+	struct _list_char *new_temp_dictionary = p->handle->languages[new_lang].temp_dictionary;
 
 	tmp = p->buffer->get_last_word(p->buffer, p->buffer->i18n_content[new_lang].content);
 
@@ -3061,7 +3061,7 @@ static void program_add_word_to_dict(struct _program *p, int new_lang)
 		return;
 	}
 
-	for (int l = 0; l < xconfig->handle->total_languages; l++)
+	for (int l = 0; l < p->handle->total_languages; l++)
 	{
 		if (l != new_lang)
 		{
@@ -3093,7 +3093,7 @@ static void program_add_word_to_dict(struct _program *p, int new_lang)
 					break;
 			}
 
-			struct _xneur_language *lang = &xconfig->handle->languages[l];
+			struct _xneur_language *lang = &p->handle->languages[l];
 			struct _list_char *curr_dictionary = lang->dictionary;
 			if (curr_dictionary->exist(curr_dictionary, curr_word+offset, BY_REGEXP))
 			{
@@ -3110,7 +3110,7 @@ static void program_add_word_to_dict(struct _program *p, int new_lang)
 		}
 	}
 
-	struct _xneur_language *lang = &xconfig->handle->languages[new_lang];
+	struct _xneur_language *lang = &p->handle->languages[new_lang];
 	struct _list_char *new_dictionary = lang->dictionary;
 	if (!new_dictionary->exist(new_dictionary, new_word+offset, BY_REGEXP))
 	{
@@ -3172,7 +3172,7 @@ static void program_add_word_to_pattern(struct _program *p, int new_lang)
 			break;
 	}
 
-	for (int i = 0; i < xconfig->handle->total_languages; i++)
+	for (int i = 0; i < p->handle->total_languages; i++)
 	{
 		if (i == new_lang)
 			continue;
@@ -3195,7 +3195,7 @@ static void program_add_word_to_pattern(struct _program *p, int new_lang)
 				break;
 		}
 
-		struct _xneur_language *lang = &xconfig->handle->languages[i];
+		struct _xneur_language *lang = &p->handle->languages[i];
 		struct _list_char *old_pattern = lang->pattern;
 		if (old_pattern->exist(old_pattern, old_word+offset, BY_PLAIN))
 		{
@@ -3207,9 +3207,9 @@ static void program_add_word_to_pattern(struct _program *p, int new_lang)
 	}
 
 #ifdef WITH_ASPELL
-	if (xconfig->handle->has_spell_checker[new_lang])
+	if (p->handle->has_spell_checker[new_lang])
 	{
-		if (!aspell_speller_check(xconfig->handle->spell_checkers[new_lang], new_word+offset, strlen(new_word)))
+		if (!aspell_speller_check(p->handle->spell_checkers[new_lang], new_word+offset, strlen(new_word)))
 		{
 			free(new_word);
 			return;
@@ -3218,7 +3218,7 @@ static void program_add_word_to_pattern(struct _program *p, int new_lang)
 #endif
 
 #ifdef WITH_ENCHANT
-	if (xconfig->handle->has_enchant_checker[new_lang])
+	if (p->handle->has_enchant_checker[new_lang])
 	{
 		if (strlen(new_word+offset) <= 0)
 		{
@@ -3226,7 +3226,7 @@ static void program_add_word_to_pattern(struct _program *p, int new_lang)
 			return;
 		}
 
-		if (enchant_dict_check(xconfig->handle->enchant_dicts[new_lang], new_word+offset, strlen(new_word+offset)))
+		if (enchant_dict_check(p->handle->enchant_dicts[new_lang], new_word+offset, strlen(new_word+offset)))
 		{
 			free(new_word);
 			return;
@@ -3234,7 +3234,7 @@ static void program_add_word_to_pattern(struct _program *p, int new_lang)
 	}
 #endif
 
-	struct _xneur_language *lang = &xconfig->handle->languages[new_lang];
+	struct _xneur_language *lang = &p->handle->languages[new_lang];
 	struct _list_char *new_pattern = lang->pattern;
 	if (!new_pattern->exist(new_pattern, new_word+offset, BY_PLAIN))
 	{
@@ -3253,8 +3253,8 @@ static void program_uninit(struct _program *p)
 
 	p->focus->uninit(p->focus);
 	p->event->uninit(p->event);
-	p->buffer->uninit(p->buffer, xconfig->handle);
-	p->correction_buffer->uninit(p->correction_buffer, xconfig->handle);
+	p->buffer->uninit(p->buffer, p->handle);
+	p->correction_buffer->uninit(p->correction_buffer, p->handle);
 	p->plugin->uninit(p->plugin);
 	p->window_layouts->uninit(p->window_layouts);
 
@@ -3265,9 +3265,9 @@ static void program_uninit(struct _program *p)
 	log_message(DEBUG, _("Program is freed"));
 }
 
-struct _program* program_init(void)
+struct _program* program_init(struct _xneur_handle *handle)
 {
-	main_window = window_init(xconfig->handle);
+	main_window = window_init(handle);
 
 	if (main_window == NULL)
 	{
@@ -3286,9 +3286,10 @@ struct _program* program_init(void)
 		log_message(WARNING, _("X Input extension not available."));
 	}
 
+	p->handle			= handle;
 	p->event			= event_init();			// X Event processor
 	p->focus			= focus_init();			// X Input Focus and Pointer processor
-	p->buffer			= buffer_init(xconfig->handle, main_window->keymap);	// Input string buffer
+	p->buffer			= buffer_init(handle, main_window->keymap);	// Input string buffer
 
 	p->plugin			= plugin_init();
 	for (int i=0; i<xconfig->plugins->data_count; i++)
@@ -3299,7 +3300,7 @@ struct _program* program_init(void)
 	p->user_action = -1;
 	p->action = ACTION_NONE;
 
-	p->correction_buffer = buffer_init(xconfig->handle, main_window->keymap);
+	p->correction_buffer = buffer_init(handle, main_window->keymap);
 	p->correction_action = CORRECTION_NONE;
 	p->window_layouts    = list_char_init();
 

@@ -1815,8 +1815,6 @@ static void xneur_config_uninit(struct _xneur_config *p)
 	if (p->host_keyboard_log != NULL)
 		free(p->host_keyboard_log);
 
-	xneur_handle_destroy(p->handle);
-
 	free(p);
 }
 
@@ -1826,8 +1824,6 @@ struct _xneur_config* xneur_config_init(void)
 	bzero(p, sizeof(struct _xneur_config));
 
 	p->pid = -1;
-
-	p->handle = xneur_handle_create();
 
 	p->delimeters = (KeySym *) malloc(sizeof(KeySym));
 	p->delimeters_string = (char *) malloc(sizeof(char));

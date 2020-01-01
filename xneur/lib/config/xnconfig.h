@@ -203,8 +203,6 @@ struct _xneur_config
 	struct _list_char *abbreviations;
 	struct _list_char *plugins;
 
-	struct _xneur_handle *handle;		// Array of languages used in program
-
 	struct _xneur_notify *sounds;			// Array of sounds for actions
 	struct _xneur_notify *osds;			// Array of OSDs for actions
 	struct _xneur_notify *popups;			// Array of popups for actions

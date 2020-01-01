@@ -113,6 +113,7 @@ static void xneur_load_config(struct _xneur_handle *handle)
 	{
 		log_message(ERROR, _("Configuration file damaged! Please, remove old file before starting xneur!"));
 		xconfig->uninit(xconfig);
+		xneur_handle_destroy(handle);
 		exit(EXIT_FAILURE);
 	}
 
@@ -162,6 +163,7 @@ static void xneur_load_config(struct _xneur_handle *handle)
 	{
 		log_message(ERROR, _("For correct operation of the program in the system should be set 2 or more keyboard layouts!"));
 		xconfig->uninit(xconfig);
+		xneur_handle_destroy(handle);
 		exit(EXIT_FAILURE);
 	}
 
@@ -306,6 +308,7 @@ static void xneur_reload(int status)
 	if (xconfig != NULL)
 		xconfig->uninit(xconfig);
 
+	xneur_handle_destroy(program->handle);
 	xconfig = xneur_config_init();
 
 	if (xconfig == NULL)
@@ -314,7 +317,8 @@ static void xneur_reload(int status)
 		exit(EXIT_FAILURE);
 	}
 
-	xneur_load_config(xconfig->handle);
+	program->handle = xneur_handle_create();
+	xneur_load_config(program->handle);
 
 	xneur_init();
 	sound_init();
@@ -477,7 +481,8 @@ int main(int argc, char *argv[])
 	}
 
 	xneur_set_lock();
-	xneur_load_config(xconfig->handle);
+	struct _xneur_handle *handle = xneur_handle_create();
+	xneur_load_config(handle);
 
 	int process_id = xconfig->get_pid(xconfig);
 	//int priority = getpriority(PRIO_PROCESS, process_id);
@@ -487,12 +492,13 @@ int main(int argc, char *argv[])
 
 	log_message(TRACE, _("Xneur process identificator is %d with nice %d"), process_id, priority);
 
-	program = program_init();
+	program = program_init(handle);
 	if (program == NULL)
 	{
 		log_message(DEBUG, _("Failed to init program structure"));
 		xconfig->set_pid(xconfig, 0);
 		xconfig->uninit(xconfig);
+		xneur_handle_destroy(handle);
 		exit(EXIT_FAILURE);
 	}
 

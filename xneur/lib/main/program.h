@@ -24,6 +24,7 @@
 
 struct _program
 {
+	struct _xneur_handle *handle;
 	struct _event *event;
 	struct _focus *focus;
 	struct _buffer *buffer;
@@ -58,6 +59,6 @@ struct _program
 	void (*uninit) (struct _program *p);
 };
 
-struct _program* program_init(void);
+struct _program* program_init(struct _xneur_handle *handle);
 
 #endif /* _PROGRAM_H_ */
