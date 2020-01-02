@@ -1183,15 +1183,6 @@ static void free_structures(struct _xneur_config *p)
 	//	free(p->user_actions);
 }
 
-static void xneur_config_reload(struct _xneur_config *p)
-{
-	pid_t process_id = p->get_pid(p);
-	if (process_id <= 0)
-		return;
-
-	kill(process_id, SIGHUP);
-}
-
 static pid_t xneur_config_set_pid(struct _xneur_config *p, pid_t process_id)
 {
 	// Set lock file to ~/.xneur/.cache/lock
@@ -1227,20 +1218,6 @@ static pid_t xneur_config_set_pid(struct _xneur_config *p, pid_t process_id)
 	fclose (stream);
 	p->pid = process_id;
 	return process_id;
-}
-
-static int xneur_config_kill(struct _xneur_config *p)
-{
-	pid_t process_id = p->get_pid(p);
-	if (process_id <= 0)
-		return FALSE;
-
-	if (kill(process_id, SIGTERM) == -1)
-		return FALSE;
-
-	xneur_config_set_pid(p, 0);
-
-	return TRUE;
 }
 
 static int xneur_config_get_pid(struct _xneur_config *p)
@@ -1295,26 +1272,6 @@ static int xneur_config_load(struct _xneur_config *p, struct _xneur_handle *hand
 		return FALSE;
 	}
 	return TRUE;
-}
-
-static void xneur_config_clear(struct _xneur_config *p)
-{
-	free_structures(p);
-
-	p->manual_apps			= list_char_init();
-	p->auto_apps			= list_char_init();
-	p->layout_remember_apps		= list_char_init();
-	p->dont_send_key_release_apps	= list_char_init();
-	p->delay_send_key_apps	= list_char_init();
-
-	p->excluded_apps		= list_char_init();
-	p->autocompletion_excluded_apps	= list_char_init();
-	p->abbreviations		= list_char_init();
-	p->plugins				= list_char_init();
-
-	p->version	= NULL;
-	p->osd_font	= NULL;
-	p->actions	= NULL;
 }
 
 static int xneur_config_save(struct _xneur_config *p, struct _xneur_handle *handle)
@@ -1873,18 +1830,12 @@ struct _xneur_config* xneur_config_init(void)
 	p->popup_expire_timeout = 1000;
 
 	// Function mapping
-	p->get_home_dict_path		= get_home_file_path_name;
-	p->get_global_dict_path		= get_file_path_name;
-
 	p->get_library_version		= xneur_config_get_library_version;
 	p->get_bool_name		= xneur_config_get_bool_name;
 
 	p->load				= xneur_config_load;
-	p->clear			= xneur_config_clear;
 	p->save				= xneur_config_save;
 	p->replace			= xneur_config_replace;
-	p->reload			= xneur_config_reload;
-	p->kill				= xneur_config_kill;
 	p->save_dict			= xneur_config_save_dict;
 	p->save_pattern			= xneur_config_save_pattern;
 	p->set_pid			= xneur_config_set_pid;
