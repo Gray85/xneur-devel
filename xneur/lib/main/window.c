@@ -68,7 +68,17 @@ static int is_has_net_supported(Display *display, Window window) {
 	return result;
 }
 
-static int window_create(struct _window *p)
+static void window_uninit(struct _window *p)
+{
+	if (p->keymap != NULL)
+		p->keymap->uninit(p->keymap);
+
+	free(p);
+
+	log_message(DEBUG, _("Window is freed"));
+}
+
+struct _window* window_init(struct _xneur_handle *handle)
 {
 	XSetErrorHandler(error_handler);
 
@@ -76,7 +86,7 @@ static int window_create(struct _window *p)
 	if (!display)
 	{
 		log_message(ERROR, _("Can't connect to XServer"));
-		return FALSE;
+		return NULL;
 	}
 
 	Window root = DefaultRootWindow(display);
@@ -86,7 +96,7 @@ static int window_create(struct _window *p)
 	{
 		log_message(ERROR, _("Can't create program window"));
 		XCloseDisplay(display);
-		return FALSE;
+		return NULL;
 	}
 
 	// Create flag window
@@ -98,7 +108,7 @@ static int window_create(struct _window *p)
 	{
 		log_message(ERROR, _("Can't create flag window"));
 		XCloseDisplay(display);
-		return FALSE;
+		return NULL;
 	}
 
 	// Set no border mode to flag window
@@ -120,43 +130,27 @@ static int window_create(struct _window *p)
 
 	XChangeProperty(display, flag_window, win_prop, win_prop, 32, PropModeReplace, (unsigned char *) &mwmhints, sizeof (XWMHints) / 4);
 
-	p->display 	= display;
-	p->window  	= window;
-	p->_NET_SUPPORTED = is_has_net_supported(display, root);
+	int _NET_SUPPORTED = is_has_net_supported(display, root);
 
 	log_message(LOG, _("Main window with id %d created"), window);
 
 	XSynchronize(display, TRUE);
 	XFlush(display);
 
-	return TRUE;
-}
+	struct _keymap* keymap = keymap_init(handle, display);
+	if (keymap == NULL) {
+		XCloseDisplay(display);
+		return NULL;
+	}
 
-
-static void window_uninit(struct _window *p)
-{
-	if (p->keymap != NULL)
-		p->keymap->uninit(p->keymap);
-
-	free(p);
-
-	log_message(DEBUG, _("Window is freed"));
-}
-
-struct _window* window_init(struct _xneur_handle *handle)
-{
 	struct _window *p = (struct _window *) malloc(sizeof(struct _window));
 	bzero(p, sizeof(struct _window));
 
-	if (!window_create(p)) {
-		free(p);
-		return NULL;
-	}
-	p->keymap = keymap_init(handle, p->display);
-	if (p->keymap == NULL) {
-		free(p);
-		return NULL;
-	}
+	p->keymap  = keymap;
+	p->display = display;
+	p->window  = window;
+	p->_NET_SUPPORTED = _NET_SUPPORTED;
+
 	// Function mapping
 	p->uninit = window_uninit;
 
