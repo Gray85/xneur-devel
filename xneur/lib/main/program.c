@@ -321,7 +321,7 @@ static void program_update(struct _program *p)
 	if (p->app_focus_mode == FOCUS_EXCLUDED)
 		listen_mode = LISTEN_DONTGRAB_INPUT;
 
-	p->focus->update_grab_events(p->focus, listen_mode);
+	p->focus->update_grab_events(p->focus, p->has_x_input_extension, listen_mode);
 
 	program_layout_update(p);
 
@@ -504,11 +504,11 @@ static void program_process_input(struct _program *p)
 				int iDummy;
 				unsigned int mask;
 
-				if (has_x_input_extension)
+				if (p->has_x_input_extension)
 				{
 					XGenericEventCookie *cookie = &p->event->event.xcookie;
 					if (cookie->type == GenericEvent &&
-						cookie->extension == xi_opcode &&
+						cookie->extension == p->xi_opcode &&
 						XGetEventData(main_window->display, cookie))
 					{
 						XIDeviceEvent* xi_event = cookie->data;
@@ -875,24 +875,24 @@ static void program_on_key_action(struct _program *p, int type, KeySym key, int 
 			if (key == XK_Caps_Lock)
 			{
 				//log_message(ERROR, "	Set Caps to %d", (state & 0x01)?0:1);
-				p->focus->update_grab_events(p->focus, LISTEN_DONTGRAB_INPUT);
+				p->focus->update_grab_events(p->focus, p->has_x_input_extension, LISTEN_DONTGRAB_INPUT);
 				//toggle_lock (main_window->keymap->capslock_mask, (state & 0x01)?0:1);
 				click_key (XK_Caps_Lock);
-				p->focus->update_grab_events(p->focus, LISTEN_GRAB_INPUT);
+				p->focus->update_grab_events(p->focus, p->has_x_input_extension, LISTEN_GRAB_INPUT);
 			}
 			if (key == XK_Num_Lock)
 			{
 				//log_message (ERROR, "Need reset Num");
-				p->focus->update_grab_events(p->focus, LISTEN_DONTGRAB_INPUT);
+				p->focus->update_grab_events(p->focus, p->has_x_input_extension, LISTEN_DONTGRAB_INPUT);
 				click_key (XK_Num_Lock);
-				p->focus->update_grab_events(p->focus, LISTEN_GRAB_INPUT);
+				p->focus->update_grab_events(p->focus, p->has_x_input_extension, LISTEN_GRAB_INPUT);
 			}
 			if (key == XK_Scroll_Lock)
 			{
 				//log_message (ERROR, "Need reset Scroll");
-				p->focus->update_grab_events(p->focus, LISTEN_DONTGRAB_INPUT);
+				p->focus->update_grab_events(p->focus, p->has_x_input_extension, LISTEN_DONTGRAB_INPUT);
 				click_key (XK_Scroll_Lock);
-				p->focus->update_grab_events(p->focus, LISTEN_GRAB_INPUT);
+				p->focus->update_grab_events(p->focus, p->has_x_input_extension, LISTEN_GRAB_INPUT);
 			}
 		}
 
@@ -3233,9 +3233,9 @@ struct _program* program_init(void)
 
 	int event = 0;
 	int error = 0;
-	has_x_input_extension = XQueryExtension(main_window->display, "XInputExtension", &xi_opcode, &event, &error);
+	p->has_x_input_extension = XQueryExtension(main_window->display, "XInputExtension", &(p->xi_opcode), &event, &error);
 
-	if (!has_x_input_extension)
+	if (!p->has_x_input_extension)
 	{
 		log_message(WARNING, _("X Input extension not available."));
 	}

@@ -217,20 +217,20 @@ static int focus_get_focus_status(struct _focus *p, int *forced_mode, int *focus
 	return focus;
 }
 
-static void focus_update_grab_events(struct _focus *p, int mode)
+static void focus_update_grab_events(struct _focus *p, int use_x_input_api, int mode)
 {
 	char *owner_window_name = get_wm_class_name(p->owner_window);
 
 	if ((mode == LISTEN_DONTGRAB_INPUT) || (p->last_focus == FOCUS_EXCLUDED))
 	{
 		grab_button(FALSE);
-		grab_all_keys(p->owner_window, FALSE);
+		grab_all_keys(p->owner_window, use_x_input_api, FALSE);
 	}
 	else
 	{
 		if (xconfig->tracking_mouse)
 			grab_button(TRUE);
-		grab_all_keys(p->owner_window, TRUE);
+		grab_all_keys(p->owner_window, use_x_input_api, TRUE);
 	}
 
 	/*
@@ -240,7 +240,7 @@ static void focus_update_grab_events(struct _focus *p, int mode)
 
 		// Event unmasking
 		grab_button(p->owner_window, FALSE);
-		grab_all_keys(p->owner_window, FALSE);
+		grab_all_keys(p->owner_window, use_x_input_api, FALSE);
 	}
 	else
 	{
@@ -252,12 +252,12 @@ static void focus_update_grab_events(struct _focus *p, int mode)
 		{
 			if (xconfig->tracking_mouse)
 			  grab_button(p->parent_window, TRUE);
-			grab_all_keys(p->owner_window, TRUE);
+			grab_all_keys(p->owner_window, use_x_input_api, TRUE);
 		}
 		else
 		{
 			grab_button(p->owner_window, FALSE);
-			grab_all_keys(p->owner_window, FALSE);
+			grab_all_keys(p->owner_window, use_x_input_api, FALSE);
 		}
 	}
 	*/

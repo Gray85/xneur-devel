@@ -131,12 +131,12 @@ void grab_button(int is_grab)
 	}
 }
 
-void grab_all_keys(Window window, int is_grab)
+void grab_all_keys(Window window, int use_x_input_api, int is_grab)
 {
 	if (is_grab)
 	{
 		// Grab all keys...
-		if (has_x_input_extension) {
+		if (use_x_input_api) {
 			XIEventMask mask;
 			mask.deviceid = XIAllDevices;
 			mask.mask_len = XIMaskLen(XI_KeyPress)+
@@ -153,7 +153,7 @@ void grab_all_keys(Window window, int is_grab)
 	}
 	else
 	{
-		if (has_x_input_extension) {
+		if (use_x_input_api) {
 			XIEventMask mask;
 			mask.deviceid = XIAllMasterDevices;
 			mask.mask_len = XIMaskLen(XI_KeyPress);
