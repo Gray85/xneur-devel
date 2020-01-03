@@ -239,7 +239,7 @@ static int get_auto_action(struct _program *p, KeySym key, int modifier_mask)
 }
 
 static void fetch_window_name(char *text_to_find, Window window) {
-	char *app_name = get_wm_class_name(window);
+	char *app_name = get_wm_class_name(main_window->display, window);
 	if (app_name != NULL && xconfig->layout_remember_apps->exist(xconfig->layout_remember_apps, app_name, BY_PLAIN)) {
 		sprintf(text_to_find, "%s", app_name);
 	} else {

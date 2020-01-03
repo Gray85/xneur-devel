@@ -53,6 +53,7 @@
 #define INIT_STRING_LENGTH 64
 
 extern struct _xneur_config *xconfig;
+extern struct _window *main_window;
 
 Window last_log_window = 0;
 time_t last_log_time = 0;
@@ -283,7 +284,7 @@ static void buffer_save(struct _buffer *p, char *file_name, Window window)
 	{
 		last_log_window = window;
 		last_log_time = 0;
-		char *app_name = get_wm_class_name(window);
+		char *app_name = get_wm_class_name(main_window->display, window);
 		fprintf(stream, "</ul>\n<br><font color=\"#FF0000\"><b>%s <font size=\"2\">[%s]</font></font></b><br><ul>\n", app_name, buffer);
 		if (app_name != NULL)
 			free(app_name);

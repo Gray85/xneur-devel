@@ -22,7 +22,7 @@
 
 #include <X11/extensions/XTest.h>
 
-char*  get_wm_class_name(Window window);
+char* get_wm_class_name(Display *display, Window window);
 unsigned char *get_win_prop(Display *display, Window window, Atom atom, long *nitems, Atom *type, int *size);
 
 #endif /* _UTILS_H_ */

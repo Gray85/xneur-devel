@@ -28,14 +28,12 @@
 
 #define MAXSTR 10000
 
-extern struct _window *main_window;
-
-static Window get_root_window(Window window)
+static Window get_root_window(Display *display, Window window)
 {
 	Window root_window, parent_window, *childrens;
 	unsigned int childrens_count;
 
-	if (!XQueryTree(main_window->display, window, &root_window, &parent_window, &childrens, &childrens_count))
+	if (!XQueryTree(display, window, &root_window, &parent_window, &childrens, &childrens_count))
 		return None;
 
 	if (childrens)
@@ -47,7 +45,7 @@ static Window get_root_window(Window window)
 	return parent_window;
 }
 
-static Window find_window_with_atom(Window window, Atom atom)
+static Window find_window_with_atom(Display *display, Window window, Atom atom)
 {
 	Atom actual_type;
 	int actual_format;
@@ -55,7 +53,7 @@ static Window find_window_with_atom(Window window, Atom atom)
 	unsigned long bytes_after;
 	unsigned char *data = NULL;
 
-	int status = XGetWindowProperty(main_window->display, window, atom, 0, (MAXSTR + 3) / 4, False, AnyPropertyType, &actual_type, &actual_format, &nitems, &bytes_after, &data);
+	int status = XGetWindowProperty(display, window, atom, 0, (MAXSTR + 3) / 4, False, AnyPropertyType, &actual_type, &actual_format, &nitems, &bytes_after, &data);
 	if (status == Success)
 	{
 		XFree(data);
@@ -63,11 +61,11 @@ static Window find_window_with_atom(Window window, Atom atom)
 			return window;
 	}
 
-	Window root_window = get_root_window(window);
+	Window root_window = get_root_window(display, window);
 	if (root_window == None)
 		return None;
 
-	status = XGetWindowProperty(main_window->display, root_window, atom, 0, (MAXSTR + 3) / 4, False, AnyPropertyType, &actual_type, &actual_format, &nitems, &bytes_after, &data);
+	status = XGetWindowProperty(display, root_window, atom, 0, (MAXSTR + 3) / 4, False, AnyPropertyType, &actual_type, &actual_format, &nitems, &bytes_after, &data);
 	if (status == Success)
 	{
 		XFree(data);
@@ -94,16 +92,15 @@ unsigned char *get_win_prop(Display *display, Window window, Atom atom, long *ni
 	return prop;
 }
 
-char* get_wm_class_name(Window window)
+char* get_wm_class_name(Display *display, Window window)
 {
 	if (window == None)
 		return NULL;
 
-	Window named_window = find_window_with_atom(window, XInternAtom(main_window->display, "WM_CLASS", True));
+	Window named_window = find_window_with_atom(display, window, XInternAtom(display, "WM_CLASS", True));
 	if (named_window == None)
 	{
-
-		named_window = find_window_with_atom(window, XInternAtom(main_window->display, "WM_NAME", True));
+		named_window = find_window_with_atom(display, window, XInternAtom(display, "WM_NAME", True));
 
 		if (named_window == None)
 			return NULL;
@@ -112,8 +109,8 @@ char* get_wm_class_name(Window window)
 		int size;
 		long nitems;
 
-		Atom request = XInternAtom(main_window->display, "WM_NAME", False);
-		unsigned char *data = get_win_prop(main_window->display, named_window, request, &nitems, &type, &size);
+		Atom request = XInternAtom(display, "WM_NAME", False);
+		unsigned char *data = get_win_prop(display, named_window, request, &nitems, &type, &size);
 
 		if (nitems > 0 && data != NULL) {
 			// Returned string is freed by `free` function, but result from `get_win_prop` must be freed by `XFree` function
@@ -128,7 +125,7 @@ char* get_wm_class_name(Window window)
 
 	XClassHint *wm_class = XAllocClassHint();
 
-	if (!XGetClassHint(main_window->display, named_window, wm_class))
+	if (!XGetClassHint(display, named_window, wm_class))
 	{
 		XFree(wm_class);
 		return NULL;

@@ -100,7 +100,7 @@ static int get_focus(struct _focus *p, int *forced_mode, int *focus_status, int 
 		// Catch not empty and not system window
 		if (new_window != None && new_window > 1000)
 		{
-			new_app_name = get_wm_class_name(new_window);
+			new_app_name = get_wm_class_name(main_window->display, new_window);
 			if (new_app_name != NULL)
 				break;
 		}
@@ -113,7 +113,7 @@ static int get_focus(struct _focus *p, int *forced_mode, int *focus_status, int 
 		usleep(100000);
 	}
 
-	//char *new_app_name = get_wm_class_name(new_window);
+	//char *new_app_name = get_wm_class_name(main_window->display, new_window);
 	//if (new_app_name != NULL)
 	//{
 		if (xconfig->excluded_apps->exist(xconfig->excluded_apps, new_app_name, BY_PLAIN))
@@ -284,7 +284,7 @@ static int focus_get_focus_status(struct _focus *p, int *forced_mode, int *focus
 
 static void focus_update_grab_events(struct _focus *p, int use_x_input_api, int mode)
 {
-	char *owner_window_name = get_wm_class_name(p->owner_window);
+	char *owner_window_name = get_wm_class_name(main_window->display, p->owner_window);
 
 	if ((mode == LISTEN_DONTGRAB_INPUT) || (p->last_focus == FOCUS_EXCLUDED))
 	{

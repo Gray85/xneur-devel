@@ -109,7 +109,7 @@ int is_x11_server_time(Window window)
 		curr_window = parent_window;
 	}
 	// FIXME >> Firefox and Thunderbird fix (some children windows not have GDK_TIMESTAMP_PROP atom)
-	char *app_name = get_wm_class_name(window);
+	char *app_name = get_wm_class_name(main_window->display, window);
 	if (app_name != NULL)
 	{
 		if ((strcmp("Firefox", app_name) == 0) || (strcmp("Thunderbird", app_name) == 0))
@@ -140,7 +140,7 @@ unsigned long long current_timestamp(Window window)
 void event_send_xkey(struct _event *p, KeyCode kc, int modifiers)
 {
 	char *app_name = NULL;
-	app_name = get_wm_class_name(p->owner_window);
+	app_name = get_wm_class_name(main_window->display, p->owner_window);
 
 	int is_delay = xconfig->delay_send_key_apps->exist(xconfig->delay_send_key_apps, app_name, BY_PLAIN);
 	if (is_delay)
