@@ -31,6 +31,6 @@ enum _selection_type
 void  on_selection_converted(enum _selection_type sel_type);
 void  do_selection_notify(enum _selection_type sel_type);*/
 
-unsigned char *get_selection_text (enum _selection_type sel_type);
+unsigned char *get_selection_text(struct _window* window, enum _selection_type sel_type);
 
 #endif /* _SELECTION_H_ */

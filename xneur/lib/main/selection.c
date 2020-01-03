@@ -38,10 +38,7 @@
 static Atom utf8_atom;
 static Atom compound_text_atom;
 
-extern struct _window *main_window;
-extern struct _xneur_config *xconfig;
-
-static unsigned char *wait_selection (Atom selection)
+static unsigned char *wait_selection(struct _window* window, Atom selection)
 {
 	XEvent event;
 	Atom target;
@@ -51,38 +48,38 @@ static unsigned char *wait_selection (Atom selection)
 	unsigned char * value, * retval = NULL;
 	int keep_waiting = True;
 
-	while (keep_waiting) 
+	while (keep_waiting)
 	{
-		XNextEvent (main_window->display, &event);
+		XNextEvent(window->display, &event);
 
-		switch (event.type) 
+		switch (event.type)
 		{
 			case SelectionNotify:
-				if (event.xselection.selection != selection) 
+				if (event.xselection.selection != selection)
 					break;
 
-				if (event.xselection.property == None) 
+				if (event.xselection.property == None)
 				{
 					log_message(WARNING, _("Convert to selection target error"));
 					value = NULL;
 					keep_waiting = FALSE;
-				} 
-				else 
+				}
+				else
 				{
 					XGetWindowProperty (event.xselection.display,
 						event.xselection.requestor,
 						event.xselection.property, 0L, 1000000,
 						False, (Atom)AnyPropertyType, &target, &format, &length, &bytesafter, &value);
-					
-					if (target != utf8_atom && target != XA_STRING && target != compound_text_atom) 
+
+					if (target != utf8_atom && target != XA_STRING && target != compound_text_atom)
 					{
 						/* Report non-TEXT atoms */
 						log_message(WARNING, _("Selection is not a string"));
 						free (retval);
 						retval = NULL;
 						keep_waiting = FALSE;
-					} 
-					else 
+					}
+					else
 					{
 						retval = (unsigned char *)strdup ((char *)value);
 						XFree (value);
@@ -99,67 +96,67 @@ static unsigned char *wait_selection (Atom selection)
 	return retval;
 }
 
-static Time get_timestamp (void)
+static Time get_timestamp(struct _window* window)
 {
   XEvent event;
 
-  XChangeProperty (main_window->display, main_window->window, XA_WM_NAME, XA_STRING, 8,
+  XChangeProperty(window->display, window->window, XA_WM_NAME, XA_STRING, 8,
                    PropModeAppend, NULL, 0);
 
   while (1) {
-    XNextEvent (main_window->display, &event);
+    XNextEvent(window->display, &event);
 
     if (event.type == PropertyNotify)
       return event.xproperty.time;
   }
 }
 
-static unsigned char *get_selection (Atom selection, Atom request_target)
+static unsigned char *get_selection(struct _window* window, Atom selection, Atom request_target)
 {
 	unsigned char * retval;
 
-	// Get a timestamp 
-	XSelectInput (main_window->display, main_window->window, PropertyChangeMask);
+	// Get a timestamp
+	XSelectInput(window->display, window->window, PropertyChangeMask);
 
-	Atom prop = XInternAtom (main_window->display, "XSEL_DATA", FALSE);
-	Time timestamp = get_timestamp ();
-	
-	XConvertSelection (main_window->display, selection, request_target, prop, main_window->window, timestamp);
-	XSync (main_window->display, FALSE);
+	Atom prop = XInternAtom(window->display, "XSEL_DATA", FALSE);
+	Time timestamp = get_timestamp(window);
 
-	retval = wait_selection (selection);
-	
+	XConvertSelection(window->display, selection, request_target, prop, window->window, timestamp);
+	XSync(window->display, FALSE);
+
+	retval = wait_selection(window, selection);
+
 	return retval;
 }
 
-unsigned char *get_selection_text (enum _selection_type sel_type)
+unsigned char *get_selection_text(struct _window* window, enum _selection_type sel_type)
 {
 	Atom selection = 0;
 	switch (sel_type)
 	{
 		case SELECTION_PRIMARY:
 		{
-			selection = XInternAtom(main_window->display, "PRIMARY", FALSE);
+			selection = XInternAtom(window->display, "PRIMARY", FALSE);
 			break;
 		}
 		case SELECTION_SECONDARY:
 		{
-			selection = XInternAtom(main_window->display, "SECONDARY", FALSE);
+			selection = XInternAtom(window->display, "SECONDARY", FALSE);
 			break;
 		}
 		case SELECTION_CLIPBOARD:
 		{
-			selection = XInternAtom(main_window->display, "CLIPBOARD", FALSE);
+			selection = XInternAtom(window->display, "CLIPBOARD", FALSE);
 			break;
 		}
 	}
 
-	utf8_atom = XInternAtom (main_window->display, "UTF8_STRING", FALSE);
-	compound_text_atom = XInternAtom (main_window->display, "COMPOUND_TEXT", FALSE);
+	utf8_atom = XInternAtom(window->display, "UTF8_STRING", FALSE);
+	compound_text_atom = XInternAtom(window->display, "COMPOUND_TEXT", FALSE);
 
 	unsigned char * retval;
-	if ((retval = get_selection (selection, utf8_atom)) == NULL)
-		retval = get_selection (selection, XA_STRING);
+	if ((retval = get_selection(window, selection, utf8_atom)) == NULL)
+		retval = get_selection(window, selection, XA_STRING);
 
 	return retval;
 }

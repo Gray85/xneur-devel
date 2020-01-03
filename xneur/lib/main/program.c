@@ -748,9 +748,9 @@ static void program_process_selection_notify(struct _program *p)
 {
 	char *event_text = NULL;
 	if (p->action_mode == ACTION_CHANGE_SELECTED || p->action_mode == ACTION_CHANGECASE_SELECTED || p->action_mode == ACTION_TRANSLIT_SELECTED || p->action_mode == ACTION_PREVIEW_CHANGE_SELECTED)
-		event_text = (char *)get_selection_text(SELECTION_PRIMARY);
+		event_text = (char *)get_selection_text(main_window, SELECTION_PRIMARY);
 	else if (p->action_mode == ACTION_CHANGE_CLIPBOARD || p->action_mode == ACTION_CHANGECASE_CLIPBOARD || p->action_mode == ACTION_TRANSLIT_CLIPBOARD || p->action_mode == ACTION_PREVIEW_CHANGE_CLIPBOARD)
-		event_text = (char *)get_selection_text(SELECTION_CLIPBOARD);
+		event_text = (char *)get_selection_text(main_window, SELECTION_CLIPBOARD);
 
 	if (event_text == NULL)
 	{
