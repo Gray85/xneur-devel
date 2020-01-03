@@ -42,19 +42,16 @@
 
 #include "event.h"
 
-extern struct _xneur_config *xconfig;
-extern struct _window *main_window;
-
-int get_key_state(int key)
+int get_key_state(Display* display, int key)
 {
-	if (main_window->display == NULL)
+	if (display == NULL)
 		return 0;
 
-	KeyCode key_code = XKeysymToKeycode(main_window->display, key);
+	KeyCode key_code = XKeysymToKeycode(display, key);
 	if (key_code == NoSymbol)
 		return 0;
 
-	XModifierKeymap *map = XGetModifierMapping(main_window->display);
+	XModifierKeymap *map = XGetModifierMapping(display);
 
 	int key_mask = 0;
 	for (int i = 0; i < 8; i++)
@@ -71,12 +68,12 @@ int get_key_state(int key)
 	Window wDummy;
 	int iDummy;
 	unsigned int mask;
-	XQueryPointer(main_window->display, DefaultRootWindow(main_window->display), &wDummy, &wDummy, &iDummy, &iDummy, &iDummy, &iDummy, &mask);
+	XQueryPointer(display, DefaultRootWindow(display), &wDummy, &wDummy, &iDummy, &iDummy, &iDummy, &iDummy, &mask);
 
 	return ((mask & key_mask) != 0);
 }
 
-int is_x11_server_time(Window window)
+static int is_x11_server_time(Display* display, Window window)
 {
 	Atom prop, da;
 	int di;
@@ -84,7 +81,7 @@ int is_x11_server_time(Window window)
 	unsigned char *prop_ret = NULL;
 	unsigned long dl;
 	Window curr_window = window;
-	prop = XInternAtom(main_window->display, "GDK_TIMESTAMP_PROP", True);
+	prop = XInternAtom(display, "GDK_TIMESTAMP_PROP", True);
 
 	while (TRUE)
 	{
@@ -92,7 +89,7 @@ int is_x11_server_time(Window window)
 		Window root_window, parent_window;
 		Window *children_return = NULL;
 
-		status = XGetWindowProperty(main_window->display, curr_window, prop, 0L, sizeof (Atom), False,
+		status = XGetWindowProperty(display, curr_window, prop, 0L, sizeof (Atom), False,
 								AnyPropertyType, &da, &di, &dl, &dl, &prop_ret);
 
 		if (status == Success && prop_ret)
@@ -101,7 +98,7 @@ int is_x11_server_time(Window window)
 			if (prop_ret[0] == magic)
 				return TRUE;
 		}
-		int is_same_screen = XQueryTree(main_window->display, curr_window, &root_window, &parent_window, &children_return, &children_count);
+		int is_same_screen = XQueryTree(display, curr_window, &root_window, &parent_window, &children_return, &children_count);
 		if (children_return != NULL)
 			XFree(children_return);
 		if (!is_same_screen || parent_window == None || parent_window == root_window)
@@ -109,7 +106,7 @@ int is_x11_server_time(Window window)
 		curr_window = parent_window;
 	}
 	// FIXME >> Firefox and Thunderbird fix (some children windows not have GDK_TIMESTAMP_PROP atom)
-	char *app_name = get_wm_class_name(main_window->display, window);
+	char *app_name = get_wm_class_name(display, window);
 	if (app_name != NULL)
 	{
 		if ((strcmp("Firefox", app_name) == 0) || (strcmp("Thunderbird", app_name) == 0))
@@ -122,9 +119,9 @@ int is_x11_server_time(Window window)
 	return FALSE;
 }
 
-unsigned long long current_timestamp(Window window)
+static unsigned long long current_timestamp(Display* display, Window window)
 {
-	if (is_x11_server_time (window))
+	if (is_x11_server_time(display, window))
 	{
 		return CurrentTime;
 	}
@@ -137,85 +134,85 @@ unsigned long long current_timestamp(Window window)
 	}
 }
 
-void event_send_xkey(struct _event *p, KeyCode kc, int modifiers)
+static void event_send_xkey(struct _event *p, Display* display, struct _xneur_config* config, KeyCode kc, int modifiers)
 {
 	char *app_name = NULL;
-	app_name = get_wm_class_name(main_window->display, p->owner_window);
+	app_name = get_wm_class_name(display, p->owner_window);
 
-	int is_delay = xconfig->delay_send_key_apps->exist(xconfig->delay_send_key_apps, app_name, BY_PLAIN);
+	int is_delay = config->delay_send_key_apps->exist(config->delay_send_key_apps, app_name, BY_PLAIN);
 	if (is_delay)
 	{
-		usleep(xconfig->send_delay * 1000);
+		usleep(config->send_delay * 1000);
 	}
 
 	p->event.type			= KeyPress;
 	p->event.xkey.type		= KeyPress;
 	p->event.xkey.window		= p->owner_window;
-	p->event.xkey.root		= RootWindow(main_window->display, DefaultScreen(main_window->display));
+	p->event.xkey.root		= DefaultRootWindow(display);
 	p->event.xkey.subwindow		= None;
 	p->event.xkey.same_screen	= True;
-	p->event.xkey.display		= main_window->display;
+	p->event.xkey.display		= display;
 	p->event.xkey.state		= modifiers;
 	p->event.xkey.keycode		= kc;
 	//p->event.xkey.time		= CurrentTime;
-	p->event.xkey.time		= current_timestamp(p->owner_window);
+	p->event.xkey.time		= current_timestamp(display, p->owner_window);
 
-	if (xconfig->dont_send_key_release_apps->exist(xconfig->dont_send_key_release_apps, app_name, BY_PLAIN))
+	if (config->dont_send_key_release_apps->exist(config->dont_send_key_release_apps, app_name, BY_PLAIN))
 	{
-		XSendEvent(main_window->display, p->owner_window, TRUE, NoEventMask, &p->event);
-		XFlush(main_window->display);
+		XSendEvent(display, p->owner_window, TRUE, NoEventMask, &p->event);
+		XFlush(display);
 		log_message(TRACE, _("The event KeyRelease is not sent to the window (ID %d) with name '%s'"), p->owner_window, app_name);
 		if (app_name != NULL)
 			free(app_name);
 		return;
 	}
 
-	XSendEvent(main_window->display, p->owner_window, TRUE, NoEventMask, &p->event);
-	XFlush(main_window->display);
+	XSendEvent(display, p->owner_window, TRUE, NoEventMask, &p->event);
+	XFlush(display);
 
 	if (is_delay)
 	{
-		usleep(xconfig->send_delay * 1000);
+		usleep(config->send_delay * 1000);
 	}
 
 	p->event.type			= KeyRelease;
 	p->event.xkey.type		= KeyRelease;
 	//p->event.xkey.time		= CurrentTime;
-	p->event.xkey.time		= current_timestamp(p->owner_window);
+	p->event.xkey.time		= current_timestamp(display, p->owner_window);
 
-	XSendEvent(main_window->display, p->owner_window, TRUE, NoEventMask, &p->event);
-	XFlush(main_window->display);
+	XSendEvent(display, p->owner_window, TRUE, NoEventMask, &p->event);
+	XFlush(display);
 
 	if (app_name != NULL)
 		free(app_name);
 }
 
-static void common_send_xkey(struct _event *p, int count, int input_keycode, int Mask_modifier)
+static void common_send_xkey(struct _event *p, Display* display, struct _xneur_config* config, int count, int input_keycode, int Mask_modifier)
 {
 	for (int i = 0; i < count; i++)
-		p->send_xkey(p, input_keycode, Mask_modifier);
+		event_send_xkey(p, display, config, input_keycode, Mask_modifier);
 }
 
-static void event_send_backspaces(struct _event *p, int count)
+static void event_send_backspaces(struct _event *p, Display* display, struct _xneur_config* config, int count)
 {
-	common_send_xkey(p, count, p->backspace, None);
+	common_send_xkey(p, display, config, count, p->backspace, None);
 }
 
-static void event_send_spaces(struct _event *p, int count)
+static void event_send_spaces(struct _event *p, Display* display, struct _xneur_config* config, int count)
 {
-	common_send_xkey(p, count, p->space, None);
+	common_send_xkey(p, display, config, count, p->space, None);
 }
 
-static void event_send_selection(struct _event *p, int count)
+static void event_send_selection(struct _event *p, Display* display, struct _xneur_config* config, int count)
 {
-	common_send_xkey(p, count, p->left, None);
-	common_send_xkey(p, count, p->right, ShiftMask);
+	common_send_xkey(p, display, config, count, p->left, None);
+	common_send_xkey(p, display, config, count, p->right, ShiftMask);
 }
 
-static void event_send_string(struct _event *p, struct _buffer *str)
+static void event_send_string(struct _event *p, Display* display, struct _xneur_config* config, struct _buffer *str)
 {
 	for (int i = 0; i < str->cur_pos; i++)
-		p->send_xkey(p, str->keycode[i], str->keycode_modifiers[i]);
+		event_send_xkey(p, display, config, str->keycode[i], str->keycode_modifiers[i]);
 }
 
 static void event_set_owner_window(struct _event *p, Window window)
@@ -223,7 +220,7 @@ static void event_set_owner_window(struct _event *p, Window window)
 	p->owner_window = window;
 }
 
-static KeySym event_get_cur_keysym(struct _event *p)
+static KeySym event_get_cur_keysym(struct _event *p, struct _window* window)
 {
 	//return XLookupKeysym(&p->event.xkey, 0);
 
@@ -237,9 +234,9 @@ static KeySym event_get_cur_keysym(struct _event *p)
 	return ks;*/
 
 	XKeyEvent *e = (XKeyEvent *) &p->event;
-	ks = XkbKeycodeToKeysym(main_window->display, e->keycode, main_window->keymap->latin_group, 0);
+	ks = XkbKeycodeToKeysym(window->display, e->keycode, window->keymap->latin_group, 0);
 	if (ks == NoSymbol)
-		ks = XkbKeycodeToKeysym(main_window->display, e->keycode, 0, 0);
+		ks = XkbKeycodeToKeysym(window->display, e->keycode, 0, 0);
 	return ks;
 }
 
@@ -267,16 +264,16 @@ static int event_get_cur_modifiers(struct _event *p)
 	return mask;
 }
 
-static int event_get_next_event(struct _event *p)
+static int event_get_next_event(struct _event *p, Display* display)
 {
-	XNextEvent(main_window->display, &(p->event));
+	XNextEvent(display, &(p->event));
 	return p->event.type;
 }
 
-static void event_send_next_event(struct _event *p)
+static void event_send_next_event(struct _event *p, Display* display)
 {
-	p->event.xkey.state = p->get_cur_modifiers(p) | groups[get_curr_keyboard_group(main_window->display)];
-	XSendEvent(main_window->display, p->event.xany.window,FALSE, NoEventMask, &p->event);
+	p->event.xkey.state = p->get_cur_modifiers(p) | groups[get_curr_keyboard_group(display)];
+	XSendEvent(display, p->event.xany.window,FALSE, NoEventMask, &p->event);
 }
 
 static void event_uninit(struct _event *p)
@@ -287,15 +284,15 @@ static void event_uninit(struct _event *p)
 	log_message(DEBUG, _("Event is freed"));
 }
 
-struct _event* event_init(void)
+struct _event* event_init(Display* display)
 {
 	struct _event *p = (struct _event *) malloc(sizeof(struct _event));
 	bzero(p, sizeof(struct _event));
 
-	p->backspace		= XKeysymToKeycode(main_window->display, XK_BackSpace);
-	p->left			= XKeysymToKeycode(main_window->display, XK_Left);
-	p->right		= XKeysymToKeycode(main_window->display, XK_Right);
-	p->space		= XKeysymToKeycode(main_window->display, XK_space);
+	p->backspace = XKeysymToKeycode(display, XK_BackSpace);
+	p->left      = XKeysymToKeycode(display, XK_Left);
+	p->right     = XKeysymToKeycode(display, XK_Right);
+	p->space     = XKeysymToKeycode(display, XK_space);
 
 	// Functions mapping
 	p->get_next_event	= event_get_next_event;

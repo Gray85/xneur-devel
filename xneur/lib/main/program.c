@@ -149,7 +149,7 @@ static int get_auto_action(struct _program *p, KeySym key, int modifier_mask)
 	// KeyPad keys
 	if (IsKeypadKey(key))
 	{
-		if (get_key_state(XK_Num_Lock) != 0)
+		if (get_key_state(main_window->display, XK_Num_Lock) != 0)
 		{
 			if (modifier_mask & ControlMask || modifier_mask & Mod1Mask || modifier_mask & ShiftMask || modifier_mask & Mod4Mask)
 				return KLB_CLEAR;
@@ -387,7 +387,7 @@ static void program_process_input(struct _program *p)
 
 	while (1)
 	{
-		int type = p->event->get_next_event(p->event);
+		int type = p->event->get_next_event(p->event, main_window->display);
 
 		int curr_layout = get_curr_keyboard_group(main_window->display);
 		if ((p->last_layout != curr_layout) && (p->last_window == p->focus->owner_window))
@@ -630,7 +630,7 @@ static void program_process_input(struct _program *p)
 					switch (type) {
 					case KeyPress:
 					{
-						KeySym key_sym = p->event->get_cur_keysym(p->event);
+						KeySym key_sym = p->event->get_cur_keysym(p->event, main_window);
 
 						XQueryPointer(main_window->display,
 									  (Window)p->focus->owner_window,
@@ -651,14 +651,14 @@ static void program_process_input(struct _program *p)
 						if (p->event->default_event.xkey.keycode != 0)
 						{
 							p->event->event = p->event->default_event;
-							p->event->send_next_event(p->event);
+							p->event->send_next_event(p->event, main_window->display);
 						}
 
 						break;
 					}
 					case KeyRelease:
 					{
-						KeySym key_sym = p->event->get_cur_keysym(p->event);
+						KeySym key_sym = p->event->get_cur_keysym(p->event, main_window);
 
 						XQueryPointer(main_window->display,
 									  (Window)p->focus->owner_window,
@@ -679,7 +679,7 @@ static void program_process_input(struct _program *p)
 						if (p->event->default_event.xkey.keycode != 0)
 						{
 							p->event->event = p->event->default_event;
-							p->event->send_next_event(p->event);
+							p->event->send_next_event(p->event, main_window->display);
 						}
 
 						break;
@@ -710,7 +710,7 @@ static void program_change_incidental_caps(struct _program *p)
 	p->buffer->set_uncaps_mask(p->buffer);
 
 	// Change CAPS if need
-	if (!get_key_state(XK_Caps_Lock))
+	if (!get_key_state(main_window->display, XK_Caps_Lock))
 		return;
 
 	toggle_lock(LockMask, 0);
@@ -722,7 +722,7 @@ static void program_unchange_incidental_caps(struct _program *p)
 	p->buffer->set_caps_mask(p->buffer);
 
 	// Change CAPS if need
-	if (get_key_state(XK_Caps_Lock))
+	if (get_key_state(main_window->display, XK_Caps_Lock))
 		return;
 
 	toggle_lock (LockMask, 1);
@@ -846,7 +846,7 @@ static void program_process_selection_notify(struct _program *p)
 	if (p->action_mode == ACTION_CHANGE_SELECTED || p->action_mode == ACTION_CHANGECASE_SELECTED || p->action_mode == ACTION_TRANSLIT_SELECTED)
 	{
 		if (xconfig->save_selection_after_convert)
-			p->event->send_selection(p->event, p->buffer->cur_pos);
+			p->event->send_selection(p->event, main_window->display, xconfig, p->buffer->cur_pos);
 	}
 
 	p->buffer->save_and_clear(p->buffer, p->handle, p->focus->owner_window);
@@ -991,11 +991,11 @@ static void program_perform_auto_action(struct _program *p, int action)
 	{
 		case KLB_NO_ACTION:
 		{
-			if (xconfig->disable_capslock && get_key_state(XK_Caps_Lock))
+			if (xconfig->disable_capslock && get_key_state(main_window->display, XK_Caps_Lock))
 				toggle_lock(LockMask, 0);
 
 			if (xconfig->flush_buffer_when_press_escape)
-				if (p->event->get_cur_keysym(p->event) == XK_Escape)
+				if (p->event->get_cur_keysym(p->event, main_window) == XK_Escape)
 				{
 					p->buffer->save_and_clear(p->buffer, p->handle, p->focus->owner_window);
 					p->correction_buffer->clear(p->correction_buffer, p->handle);
@@ -1012,7 +1012,7 @@ static void program_perform_auto_action(struct _program *p, int action)
 		{
 			if (p->last_action == ACTION_AUTOCOMPLETION)
 			{
-				p->event->send_backspaces(p->event, 1);
+				p->event->send_backspaces(p->event, main_window->display, xconfig, 1);
 				p->last_action = ACTION_NONE;
 			}
 
@@ -1130,7 +1130,7 @@ static void program_perform_auto_action(struct _program *p, int action)
 
 			// Send Event
 			p->event->event = p->event->default_event;
-			p->event->send_next_event(p->event);
+			p->event->send_next_event(p->event, main_window->display);
 			p->event->default_event.xkey.keycode = 0;
 
 			p->last_action = ACTION_NONE;
@@ -1346,9 +1346,9 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 		{
 			if (p->last_action == ACTION_AUTOCOMPLETION)
 			{
-				p->event->send_xkey(p->event, XKeysymToKeycode(main_window->display, XK_Right), p->event->event.xkey.state);
+				p->event->send_xkey(p->event, main_window->display, xconfig, XKeysymToKeycode(main_window->display, XK_Right), p->event->event.xkey.state);
 				if (xconfig->add_space_after_autocompletion)
-					p->event->send_xkey(p->event, XKeysymToKeycode(main_window->display, XK_space), p->event->event.xkey.state);
+					p->event->send_xkey(p->event, main_window->display, xconfig, XKeysymToKeycode(main_window->display, XK_space), p->event->event.xkey.state);
 				p->last_action = ACTION_NONE;
 
 				p->buffer->save_and_clear(p->buffer, p->handle, p->focus->owner_window);
@@ -1357,7 +1357,7 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 				break;
 			}
 
-			p->event->send_xkey(p->event, p->event->event.xkey.keycode, p->event->event.xkey.state);
+			p->event->send_xkey(p->event, main_window->display, xconfig, p->event->event.xkey.keycode, p->event->event.xkey.state);
 
 			p->event->event = p->event->default_event;
 			char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
@@ -1375,7 +1375,7 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 				break;
 			}
 
-			p->event->send_xkey(p->event, p->event->event.xkey.keycode, p->event->event.xkey.state);
+			p->event->send_xkey(p->event, main_window->display, xconfig, p->event->event.xkey.keycode, p->event->event.xkey.state);
 
 			p->event->event = p->event->default_event;
 			char sym = main_window->keymap->get_cur_ascii_char(main_window->keymap, &p->event->event);
@@ -1471,7 +1471,7 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 				int backspaces_count = strlen(p->buffer->get_last_word(p->buffer, p->buffer->content));
 				if (p->last_action == ACTION_AUTOCOMPLETION)
 					backspaces_count++;
-				p->event->send_backspaces(p->event, backspaces_count);
+				p->event->send_backspaces(p->event, main_window->display, xconfig, backspaces_count);
 				p->buffer->set_content(p->buffer, p->handle, string);
 
 				program_change_word(p, CHANGE_ABBREVIATION);
@@ -1893,7 +1893,7 @@ static void program_check_space_before_punctuation(struct _program *p)
 	p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 	while (p->buffer->content[p->buffer->cur_pos-1] == ' ')
 	{
-		p->event->send_backspaces(p->event, 1);
+		p->event->send_backspaces(p->event, main_window->display, xconfig, 1);
 		p->buffer->del_symbol(p->buffer, p->handle);
 		p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 	}
@@ -1943,7 +1943,7 @@ static void program_check_space_with_bracket(struct _program *p)
 		p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 		p->event->event = p->event->default_event;
 		p->event->event.xkey.keycode = XKeysymToKeycode(main_window->display, XK_space);
-		p->event->send_next_event(p->event);
+		p->event->send_next_event(p->event, main_window->display);
 		int modifier_mask = groups[get_curr_keyboard_group(main_window->display)];
 		p->buffer->add_symbol(p->buffer, p->handle, ' ', p->event->event.xkey.keycode, modifier_mask);
 
@@ -1961,7 +1961,7 @@ static void program_check_space_with_bracket(struct _program *p)
 		p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 		while (p->buffer->content[p->buffer->cur_pos - 1] == ' ')
 		{
-			p->event->send_backspaces(p->event, 1);
+			p->event->send_backspaces(p->event, main_window->display, xconfig, 1);
 			p->buffer->del_symbol(p->buffer, p->handle);
 			p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 		}
@@ -2005,7 +2005,7 @@ static void program_check_brackets_with_symbols(struct _program *p)
 		p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 		p->event->event = p->event->default_event;
 		p->event->event.xkey.keycode = XKeysymToKeycode(main_window->display, XK_space);
-		p->event->send_next_event(p->event);
+		p->event->send_next_event(p->event, main_window->display);
 		int modifier_mask = groups[get_curr_keyboard_group(main_window->display)];
 		p->buffer->add_symbol(p->buffer, p->handle, ' ', p->event->event.xkey.keycode, modifier_mask);
 
@@ -2041,7 +2041,7 @@ static void program_check_brackets_with_symbols(struct _program *p)
 	p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 	for (int i = 0; i < space_count; i++)
 	{
-		p->event->send_backspaces(p->event, 1);
+		p->event->send_backspaces(p->event, main_window->display, xconfig, 1);
 		p->buffer->del_symbol(p->buffer, p->handle);
 		p->correction_buffer->del_symbol(p->correction_buffer, p->handle);
 	}
@@ -2204,10 +2204,10 @@ static void program_check_pattern(struct _program *p)
 	}
 
 	p->event->event = p->event->default_event;
-	p->event->send_next_event(p->event);
+	p->event->send_next_event(p->event, main_window->display);
 
-	p->event->send_string(p->event, tmp_buffer);
-	p->event->send_selection(p->event, tmp_buffer->cur_pos);
+	p->event->send_string(p->event, main_window->display, xconfig, tmp_buffer);
+	p->event->send_selection(p->event, main_window->display, xconfig, tmp_buffer->cur_pos);
 
 	p->event->default_event.xkey.keycode = 0;
 
@@ -2291,10 +2291,10 @@ static void program_rotate_pattern(struct _program *p)
 	}
 
 	p->event->event = p->event->default_event;
-	p->event->send_next_event(p->event);
+	p->event->send_next_event(p->event, main_window->display);
 
-	p->event->send_string(p->event, tmp_buffer);
-	p->event->send_selection(p->event, tmp_buffer->cur_pos);
+	p->event->send_string(p->event, main_window->display, xconfig, tmp_buffer);
+	p->event->send_selection(p->event, main_window->display, xconfig, tmp_buffer->cur_pos);
 
 	p->event->default_event.xkey.keycode = 0;
 
@@ -2471,10 +2471,10 @@ static void program_check_misprint(struct _program *p)
 		p->correction_buffer->set_content(p->correction_buffer, p->handle, p->buffer->content);
 
 		int backspaces_count = p->buffer->cur_pos - p->buffer->get_last_word_offset (p->buffer, p->buffer->content, p->buffer->cur_pos) - offset;
-		p->event->send_backspaces(p->event, backspaces_count);
+		p->event->send_backspaces(p->event, main_window->display, xconfig, backspaces_count);
 
 		if (p->last_action == ACTION_AUTOCOMPLETION)
-			p->event->send_backspaces(p->event, 1);
+			p->event->send_backspaces(p->event, main_window->display, xconfig, 1);
 		for (int i = 0; i < (backspaces_count); i++)
 			p->buffer->del_symbol(p->buffer, p->handle);
 
@@ -2538,19 +2538,19 @@ static void program_send_string_silent(struct _program *p, int send_backspaces)
 	// Work-arround
 	if ((xconfig->compatibility_with_completion) && (p->last_action != ACTION_AUTOCOMPLETION))
 	{
-		p->event->send_xkey(p->event, XKeysymToKeycode(main_window->display, XK_bar), 1);
-		p->event->send_backspaces(p->event, 1);
+		p->event->send_xkey(p->event, main_window->display, xconfig, XKeysymToKeycode(main_window->display, XK_bar), 1);
+		p->event->send_backspaces(p->event, main_window->display, xconfig, 1);
 
 	} // end workarround
 
-	p->event->send_backspaces(p->event, send_backspaces);		// Delete old string
-	p->event->send_string(p->event, p->buffer);		// Send new string
+	p->event->send_backspaces(p->event, main_window->display, xconfig, send_backspaces);		// Delete old string
+	p->event->send_string(p->event, main_window->display, xconfig, p->buffer);		// Send new string
 }
 
 static void correct_word(struct _program *p, KeySym keysym, int keycount, enum _correction_action action) {
 	if (p->correction_action == CORRECTION_NONE)
 	{
-		p->event->send_backspaces(p->event, keycount);
+		p->event->send_backspaces(p->event, main_window->display, xconfig, keycount);
 
 		int key_code = main_window->keymap->max_keycode;
 		int size = main_window->keymap->keysyms_per_keycode;
@@ -2571,7 +2571,7 @@ static void correct_word(struct _program *p, KeySym keysym, int keycount, enum _
 		XFlush(main_window->display);
 		XSync(main_window->display, TRUE);
 
-		p->event->send_xkey(p->event, key_code, 0);
+		p->event->send_xkey(p->event, main_window->display, xconfig, key_code, 0);
 		usleep(100000);
 
 		XChangeKeyboardMapping(main_window->display, key_code, size, keysyms_bckp, 1);
@@ -2583,7 +2583,7 @@ static void correct_word(struct _program *p, KeySym keysym, int keycount, enum _
 	} else
 	if (p->correction_action == action)
 	{
-		p->event->send_spaces(p->event, keycount);
+		p->event->send_spaces(p->event, main_window->display, xconfig, keycount);
 
 		p->buffer->set_content(p->buffer, p->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
 		p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group(main_window->display));
@@ -2687,7 +2687,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 		{
 			if (p->correction_action == CORRECTION_NONE)
 			{
-				p->event->send_backspaces(p->event, 1);
+				p->event->send_backspaces(p->event, main_window->display, xconfig, 1);
 				p->buffer->del_symbol(p->buffer, p->handle);
 
 				KeyCode kc = 0;
@@ -2695,16 +2695,16 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				size_t sym_size = strlen(",");
 				int lang = get_curr_keyboard_group(main_window->display);
 				p->buffer->keymap->get_ascii(p->buffer->keymap, p->handle, ",", &lang, &kc, &modifier, &sym_size);
-				p->event->send_xkey(p->event, kc, modifier);
+				p->event->send_xkey(p->event, main_window->display, xconfig, kc, modifier);
 				p->buffer->add_symbol(p->buffer, p->handle, ',', kc, modifier);
 			}
 			else if (p->correction_action == CORRECTION_TWO_SPACE)
 			{
-				p->event->send_backspaces(p->event, 2);
+				p->event->send_backspaces(p->event, main_window->display, xconfig, 2);
 				p->buffer->del_symbol(p->buffer, p->handle);
 				p->buffer->del_symbol(p->buffer, p->handle);
 
-				p->event->send_spaces (p->event, 2);
+				p->event->send_spaces(p->event, main_window->display, xconfig, 2);
 				KeyCode kc = 0;
 				int modifier = 0;
 				size_t sym_size = strlen(",");
@@ -2722,7 +2722,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 		{
 			if (p->correction_action == CORRECTION_NONE)
 			{
-				p->event->send_backspaces(p->event, 2);
+				p->event->send_backspaces(p->event, main_window->display, xconfig, 2);
 
 				int key_code = main_window->keymap->max_keycode;
 				KeySym keysyms_bckp[main_window->keymap->keysyms_per_keycode];
@@ -2744,7 +2744,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 								        main_window->keymap->keysyms_per_keycode, keysyms, 1);
 				XFlush(main_window->display);
 				XSync(main_window->display, TRUE);
-				p->event->send_xkey(p->event, key_code, 0);
+				p->event->send_xkey(p->event, main_window->display, xconfig, key_code, 0);
 				usleep(100000);
 
 				XChangeKeyboardMapping(main_window->display, key_code,
@@ -2756,7 +2756,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 			}
 			else if (p->correction_action == CORRECTION_TWO_MINUS)
 			{
-				p->event->send_backspaces(p->event, 2);
+				p->event->send_backspaces(p->event, main_window->display, xconfig, 2);
 
 				p->buffer->set_content(p->buffer, p->handle, p->correction_buffer->get_last_word(p->correction_buffer, p->correction_buffer->content));
 				p->buffer->set_lang_mask(p->buffer, get_curr_keyboard_group(main_window->display));
@@ -2766,10 +2766,10 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				size_t sym_size = strlen("-");
 				int lang = get_curr_keyboard_group(main_window->display);
 				p->buffer->keymap->get_ascii(p->buffer->keymap, p->handle, "-", &lang, &kc, &modifier, &sym_size);
-				p->event->send_xkey(p->event, kc, modifier);
-				p->event->send_xkey(p->event, kc, modifier);
+				p->event->send_xkey(p->event, main_window->display, xconfig, kc, modifier);
+				p->event->send_xkey(p->event, main_window->display, xconfig, kc, modifier);
 
-				p->event->send_spaces(p->event, 1);
+				p->event->send_spaces(p->event, main_window->display, xconfig, 1);
 
 				kc = 0;
 				modifier = 0;
@@ -3287,7 +3287,7 @@ struct _program* program_init(struct _xneur_handle *handle)
 	}
 
 	p->handle			= handle;
-	p->event			= event_init();			// X Event processor
+	p->event			= event_init(main_window->display);			// X Event processor
 	p->focus			= focus_init();			// X Input Focus and Pointer processor
 	p->buffer			= buffer_init(handle, main_window->keymap);	// Input string buffer
 

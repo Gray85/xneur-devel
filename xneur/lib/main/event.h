@@ -24,11 +24,11 @@
 
 #include "buffer.h"
 
-int get_key_state(int key);
+int get_key_state(Display* display, int key);
 
 struct _event
 {
-	Window owner_window;		// Window that recieves/sends event
+	Window owner_window;		// Window that receives/sends event
 	XEvent event;			// Event to process
 	XEvent default_event;
 	KeyCode backspace;		// Backspace key code
@@ -36,20 +36,20 @@ struct _event
 	KeyCode right;			// Right Arrow key code
 	KeyCode space;
 
-	KeySym (*get_cur_keysym) (struct _event *p);
+	KeySym (*get_cur_keysym) (struct _event *p, struct _window* window);
 	int (*get_cur_modifiers) (struct _event *p);
 
-	int  (*get_next_event) (struct _event *p);
-	void (*send_next_event) (struct _event *p);
+	int  (*get_next_event) (struct _event *p, Display* display);
+	void (*send_next_event) (struct _event *p, Display* display);
 	void (*set_owner_window) (struct _event *p, Window window);
-	void (*send_xkey) (struct _event *p, KeyCode kc, int modifiers);
-	void (*send_string) (struct _event *p, struct _buffer *str);
-	void (*send_backspaces) (struct _event *p, int n);
-	void (*send_selection) (struct _event *p, int n);
-	void (*send_spaces) (struct _event *p, int n);
+	void (*send_xkey) (struct _event *p, Display* display, struct _xneur_config* config, KeyCode kc, int modifiers);
+	void (*send_string) (struct _event *p, Display* display, struct _xneur_config* config, struct _buffer *str);
+	void (*send_backspaces) (struct _event *p, Display* display, struct _xneur_config* config, int n);
+	void (*send_selection) (struct _event *p, Display* display, struct _xneur_config* config, int n);
+	void (*send_spaces) (struct _event *p, Display* display, struct _xneur_config* config, int n);
 	void (*uninit) (struct _event *p);
 };
 
-struct _event* event_init(void);
+struct _event* event_init(Display* display);
 
 #endif /* _EVENT_H_ */
