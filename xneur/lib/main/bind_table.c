@@ -35,6 +35,14 @@
 
 #include "bind_table.h"
 
+struct _bind_table
+{
+	KeySym key_sym;
+	KeySym key_sym_shift;
+	KeyCode key_code;
+	int modifier_mask;
+};
+
 static struct _bind_table *ubtable;
 
 static struct _bind_table *btable;
@@ -289,84 +297,4 @@ void unbind_user_actions(void)
 	if (ubtable != NULL)
 		free(ubtable);
 	ubtable = NULL;
-}
-
-void grab_action(Window window)
-{
-	for (enum _hotkey_action action = 0; action < MAX_HOTKEYS; action++)
-	{
-		grab_action_common(btable[action],window);
-	}
-}
-
-void grab_user_action(Window window)
-{
-	for (int action = 0; action < xconfig->actions_count; action++)
-	{
-		grab_action_common(ubtable[action],window);
-	}
-}
-
-static void XGrabKeyCombFunc(unsigned int KeyMaskResult, struct _bind_table btaction, int XSymToCodeResult, Window MainWindow){
-	XGrabKey (main_window->display,  XSymToCodeResult,
-			btaction.modifier_mask | KeyMaskResult,
-			MainWindow, FALSE,
-			GrabModeAsync, GrabModeAsync);
-}
-
-void grab_action_common(struct _bind_table btaction, Window window)
-{
-	if (window){};
-	if (!(btaction.key_sym))
-		return;
-
-	if (IsModifierKey(btaction.key_sym))
-	    return;
-
-	int XSymToCodeResult = XKeysymToKeycode(main_window->display, btaction.key_sym);
-	Window MainWindow = DefaultRootWindow(main_window->display);
-
-	XGrabKeyCombFunc(0, btaction, XSymToCodeResult, MainWindow);
-
-	if (main_window->keymap->numlock_mask)
-		XGrabKeyCombFunc(
-			main_window->keymap->numlock_mask, btaction,
-			XSymToCodeResult, MainWindow
-		);
-
-	if (main_window->keymap->capslock_mask)
-		XGrabKeyCombFunc(
-			main_window->keymap->capslock_mask, btaction,
-			XSymToCodeResult, MainWindow
-		);
-
-	if (main_window->keymap->scrolllock_mask)
-		XGrabKeyCombFunc(
-			main_window->keymap->scrolllock_mask,
-			btaction, XSymToCodeResult, MainWindow
-		);
-
-	if (main_window->keymap->numlock_mask && main_window->keymap->capslock_mask)
-		XGrabKeyCombFunc(
-			main_window->keymap->numlock_mask | main_window->keymap->capslock_mask,
-			btaction, XSymToCodeResult, MainWindow
-		);
-
-	if (main_window->keymap->numlock_mask && main_window->keymap->scrolllock_mask)
-		XGrabKeyCombFunc(
-			main_window->keymap->numlock_mask | main_window->keymap->scrolllock_mask,
-			btaction, XSymToCodeResult, MainWindow
-		);
-
-	if (main_window->keymap->capslock_mask && main_window->keymap->scrolllock_mask)
-		XGrabKeyCombFunc(
-			main_window->keymap->capslock_mask | main_window->keymap->scrolllock_mask,
-			btaction, XSymToCodeResult, MainWindow
-		);
-
-	if (main_window->keymap->numlock_mask && main_window->keymap->capslock_mask && main_window->keymap->scrolllock_mask)
-		XGrabKeyCombFunc(
-			main_window->keymap->numlock_mask | main_window->keymap->capslock_mask | main_window->keymap->scrolllock_mask,
-			btaction, XSymToCodeResult, MainWindow
-		);
 }

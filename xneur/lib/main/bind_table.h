@@ -22,26 +22,11 @@
 
 #include <X11/XKBlib.h>
 
-struct _bind_table
-{
-	KeySym key_sym;
-	KeySym key_sym_shift;
-	KeyCode key_code;
-	int modifier_mask;
-};
-
 void bind_actions(void);
 void unbind_actions(void);
 
 void bind_user_actions(void);
 void unbind_user_actions(void);
-
-void grab_action(Window window);
-void grab_user_action(Window window);
-
-void grab_action_common(struct _bind_table btaction, Window window);
-
-//void ungrab_modifiers(Window window);
 
 enum _hotkey_action get_action(KeySym key_sym, int mask);
 int get_user_action(KeySym key_sym, int mask);
