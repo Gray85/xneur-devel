@@ -99,10 +99,10 @@ static void xneur_reload(int status);
 
 }*/
 
-static void xneur_init(void)
+static void xneur_init(struct _window *window, struct _xneur_config* config)
 {
-	bind_actions(main_window, xconfig);
-	bind_user_actions(main_window, xconfig);
+	bind_actions(window, config);
+	bind_user_actions(window, config);
 }
 
 static void xneur_load_config(struct _xneur_handle *handle)
@@ -320,7 +320,7 @@ static void xneur_reload(int status)
 	program->handle = xneur_handle_create();
 	xneur_load_config(program->handle);
 
-	xneur_init();
+	xneur_init(main_window, xconfig);
 	sound_init();
 	popup_init();
 
@@ -504,7 +504,7 @@ int main(int argc, char *argv[])
 
 	sound_init();
 	popup_init();
-	xneur_init();
+	xneur_init(main_window, xconfig);
 
 	log_message(DEBUG, _("Init program structure complete"));
 	show_notify(NOTIFY_XNEUR_START, NULL);
