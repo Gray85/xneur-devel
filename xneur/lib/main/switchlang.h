@@ -20,11 +20,12 @@
 #ifndef _SWITCHLANG_H_
 #define _SWITCHLANG_H_
 
+#include <X11/Xlib.h>
 #include "xneur.h"
 
-int  get_curr_keyboard_group(void);
-void set_keyboard_group(int layout_group);
-void set_next_keyboard_group(struct _xneur_handle *handle);
-void set_prev_keyboard_group(struct _xneur_handle *handle);
+int  get_curr_keyboard_group(Display* display);
+void set_keyboard_group(Display* display, int layout_group);
+void set_next_keyboard_group(Display* display, struct _xneur_handle *handle);
+void set_prev_keyboard_group(Display* display, struct _xneur_handle *handle);
 
 #endif /* _SWITCHLANG_H_ */

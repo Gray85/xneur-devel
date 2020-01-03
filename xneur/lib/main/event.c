@@ -275,7 +275,7 @@ static int event_get_next_event(struct _event *p)
 
 static void event_send_next_event(struct _event *p)
 {
-	p->event.xkey.state = p->get_cur_modifiers(p) | groups[get_curr_keyboard_group()];
+	p->event.xkey.state = p->get_cur_modifiers(p) | groups[get_curr_keyboard_group(main_window->display)];
 	XSendEvent(main_window->display, p->event.xany.window,FALSE, NoEventMask, &p->event);
 }
 
