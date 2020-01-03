@@ -101,8 +101,8 @@ static void xneur_reload(int status);
 
 static void xneur_init(void)
 {
-	bind_actions();
-	bind_user_actions();
+	bind_actions(main_window, xconfig);
+	bind_user_actions(main_window, xconfig);
 }
 
 static void xneur_load_config(struct _xneur_handle *handle)

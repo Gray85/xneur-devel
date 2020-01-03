@@ -863,8 +863,8 @@ static void program_on_key_action(struct _program *p, int type, KeySym key, int 
 
 	if (type == KeyPress)
 	{
-		p->user_action = get_user_action(key, modifier_mask);
-		p->action = get_action(key, modifier_mask);
+		p->user_action = get_user_action(main_window->display, xconfig->user_actions_count, key, modifier_mask);
+		p->action = get_action(main_window->display, xconfig->actions_count, key, modifier_mask);
 		// If blocked events then processing stop
 		if ((p->user_action >= 0) || (p->action != ACTION_NONE))
 		{

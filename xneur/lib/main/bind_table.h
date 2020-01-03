@@ -22,14 +22,16 @@
 
 #include <X11/XKBlib.h>
 
-void bind_actions(void);
+#include "xnconfig.h"
+
+void bind_actions(struct _window* window, struct _xneur_config* config);
 void unbind_actions(void);
 
-void bind_user_actions(void);
+void bind_user_actions(struct _window* window, struct _xneur_config* config);
 void unbind_user_actions(void);
 
-enum _hotkey_action get_action(KeySym key_sym, int mask);
-int get_user_action(KeySym key_sym, int mask);
+enum _hotkey_action get_action(Display* display, int actions_count, KeySym key_sym, int mask);
+int get_user_action(Display* display, int actions_count, KeySym key_sym, int mask);
 
 
 #endif /* _BIND_TABLE_H_ */
