@@ -36,25 +36,22 @@
 
 #include "focus.h"
 
-extern struct _xneur_config *xconfig;
-extern struct _window *main_window;
-
 const char *verbose_forced_mode[]	= {"Default", "Manual", "Automatic"};
 const char *verbose_focus_status[]	= {"Processed", "Changed Focus", "Unchanged Focus", "Excluded"};
 
 
 // Private
-int focus_get_focused_window(struct _focus *p)
+int focus_get_focused_window(struct _focus *p, Display* display)
 {
 	if (p) {};
 	Window new_window;
 	int revert_to;
-	XGetInputFocus(main_window->display, &new_window, &revert_to);
+	XGetInputFocus(display, &new_window, &revert_to);
 
 	return new_window;
 }
 
-static int get_focus(struct _focus *p, int *forced_mode, int *focus_status, int *autocompletion_mode)
+static int get_focus(struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *focus_status, int *autocompletion_mode)
 {
 	*forced_mode	= FORCE_MODE_NORMAL;
 	*focus_status	= FOCUS_NONE;
@@ -63,7 +60,7 @@ static int get_focus(struct _focus *p, int *forced_mode, int *focus_status, int 
 	char *new_app_name = NULL;
 
 	// Clear masking on unfocused window
-	//p->update_grab_events(p, LISTEN_DONTGRAB_INPUT);
+	//p->update_grab_events(p, display, config, LISTEN_DONTGRAB_INPUT);
 
 	Window new_window;
 	int show_message = TRUE;
@@ -80,9 +77,9 @@ static int get_focus(struct _focus *p, int *forced_mode, int *focus_status, int 
 			int size;
 			long nitems;
 
-			Atom request = XInternAtom(main_window->display, "_NET_ACTIVE_WINDOW", False);
-			Window root = XDefaultRootWindow(main_window->display);
-			unsigned char *data = get_win_prop(main_window->display, root, request, &nitems, &type, &size);
+			Atom request = XInternAtom(display, "_NET_ACTIVE_WINDOW", False);
+			Window root = XDefaultRootWindow(display);
+			unsigned char *data = get_win_prop(display, root, request, &nitems, &type, &size);
 
 			if (nitems > 0)
 				new_window = *((Window*)data);
@@ -94,13 +91,13 @@ static int get_focus(struct _focus *p, int *forced_mode, int *focus_status, int 
 		else
 		{*/
 			int revert_to;
-			XGetInputFocus(main_window->display, &new_window, &revert_to);
+			XGetInputFocus(display, &new_window, &revert_to);
 		//}
 
 		// Catch not empty and not system window
 		if (new_window != None && new_window > 1000)
 		{
-			new_app_name = get_wm_class_name(main_window->display, new_window);
+			new_app_name = get_wm_class_name(display, new_window);
 			if (new_app_name != NULL)
 				break;
 		}
@@ -113,10 +110,10 @@ static int get_focus(struct _focus *p, int *forced_mode, int *focus_status, int 
 		usleep(100000);
 	}
 
-	//char *new_app_name = get_wm_class_name(main_window->display, new_window);
+	//char *new_app_name = get_wm_class_name(display, new_window);
 	//if (new_app_name != NULL)
 	//{
-		if (xconfig->excluded_apps->exist(xconfig->excluded_apps, new_app_name, BY_PLAIN))
+		if (config->excluded_apps->exist(config->excluded_apps, new_app_name, BY_PLAIN))
 			*focus_status = FOCUS_EXCLUDED;
 
 		if (new_app_name != NULL)
@@ -128,12 +125,12 @@ static int get_focus(struct _focus *p, int *forced_mode, int *focus_status, int 
 				*focus_status = FOCUS_EXCLUDED;
 		}
 
-		if (xconfig->auto_apps->exist(xconfig->auto_apps, new_app_name, BY_PLAIN))
+		if (config->auto_apps->exist(config->auto_apps, new_app_name, BY_PLAIN))
 			*forced_mode = FORCE_MODE_AUTO;
-		else if (xconfig->manual_apps->exist(xconfig->manual_apps, new_app_name, BY_PLAIN))
+		else if (config->manual_apps->exist(config->manual_apps, new_app_name, BY_PLAIN))
 			*forced_mode = FORCE_MODE_MANUAL;
 
-		if (xconfig->autocompletion_excluded_apps->exist(xconfig->autocompletion_excluded_apps, new_app_name, BY_PLAIN))
+		if (config->autocompletion_excluded_apps->exist(config->autocompletion_excluded_apps, new_app_name, BY_PLAIN))
 			*autocompletion_mode	= AUTOCOMPLETION_EXCLUDED;
 	//}
 	//else
@@ -144,16 +141,16 @@ static int get_focus(struct _focus *p, int *forced_mode, int *focus_status, int 
 	{
 		if (new_app_name != NULL)
 			free(new_app_name);
-		if (xconfig->troubleshoot_full_screen)
+		if (config->troubleshoot_full_screen)
 		{
 			Window root_return;
 			int x_return, y_return, root_x_return, root_y_return;
 			unsigned int width_return, height_return, root_width_return, root_height_return;
 			unsigned int border_width_return;
 			unsigned int depth_return;
-			XGetGeometry(main_window->display, p->parent_window, &root_return, &x_return, &y_return, &width_return,
+			XGetGeometry(display, p->parent_window, &root_return, &x_return, &y_return, &width_return,
 							&height_return, &border_width_return, &depth_return);
-			XGetGeometry(main_window->display, root_return, &root_return, &root_x_return, &root_y_return, &root_width_return,
+			XGetGeometry(display, root_return, &root_return, &root_x_return, &root_y_return, &root_width_return,
 							&root_height_return, &border_width_return, &depth_return);
 			if ((x_return == 0) && (y_return == 0) &&
 			    (width_return == root_width_return) && (height_return == root_height_return))
@@ -172,7 +169,7 @@ static int get_focus(struct _focus *p, int *forced_mode, int *focus_status, int 
 		Window root_window, parent_window;
 		Window *children_return = NULL;
 
-		int is_same_screen = XQueryTree(main_window->display, p->parent_window, &root_window, &parent_window, &children_return, &children_count);
+		int is_same_screen = XQueryTree(display, p->parent_window, &root_window, &parent_window, &children_return, &children_count);
 		if (children_return != NULL)
 			XFree(children_return);
 		if (!is_same_screen || parent_window == None || parent_window == root_window)
@@ -184,16 +181,16 @@ static int get_focus(struct _focus *p, int *forced_mode, int *focus_status, int 
 	// Replace unfocused window to focused window
 	p->owner_window = new_window;
 
-	if (xconfig->troubleshoot_full_screen)
+	if (config->troubleshoot_full_screen)
 	{
 		Window root_return;
 		int x_return, y_return, root_x_return, root_y_return;
 		unsigned int width_return, height_return, root_width_return, root_height_return;
 		unsigned int border_width_return;
 		unsigned int depth_return;
-		XGetGeometry(main_window->display, p->parent_window, &root_return, &x_return, &y_return, &width_return,
+		XGetGeometry(display, p->parent_window, &root_return, &x_return, &y_return, &width_return,
 						&height_return, &border_width_return, &depth_return);
-		XGetGeometry(main_window->display, root_return, &root_return, &root_x_return, &root_y_return, &root_width_return,
+		XGetGeometry(display, root_return, &root_return, &root_x_return, &root_y_return, &root_width_return,
 						&root_height_return, &border_width_return, &depth_return);
 		if ((x_return == 0) && (y_return == 0) &&
 			(width_return == root_width_return) && (height_return == root_height_return))
@@ -207,7 +204,7 @@ static int get_focus(struct _focus *p, int *forced_mode, int *focus_status, int 
 	return FOCUS_CHANGED;
 }
 
-static void grab_button(int is_grab)
+static void grab_button(Display* display, int is_grab)
 {
 	if (is_grab)
 	{
@@ -216,7 +213,7 @@ static void grab_button(int is_grab)
 		mask.mask_len = XIMaskLen(XI_RawButtonPress);
 		mask.mask = (void *)calloc(mask.mask_len, sizeof(char));
 		XISetMask(mask.mask, XI_RawButtonPress);
-		XISelectEvents(main_window->display, DefaultRootWindow(main_window->display), &mask, 1);
+		XISelectEvents(display, DefaultRootWindow(display), &mask, 1);
 		free(mask.mask);
 	}
 	else
@@ -226,12 +223,12 @@ static void grab_button(int is_grab)
 		mask.mask_len = XIMaskLen(XI_RawButtonPress);
 		mask.mask = (void *)calloc(mask.mask_len, sizeof(char));
 		XISetMask(mask.mask, 0);
-		XISelectEvents(main_window->display, DefaultRootWindow(main_window->display), &mask, 1);
+		XISelectEvents(display, DefaultRootWindow(display), &mask, 1);
 		free(mask.mask);
 	}
 }
 
-static void grab_all_keys(Window window, int use_x_input_api, int is_grab)
+static void grab_all_keys(Display* display, Window window, int use_x_input_api, int is_grab)
 {
 	if (is_grab)
 	{
@@ -244,11 +241,11 @@ static void grab_all_keys(Window window, int use_x_input_api, int is_grab)
 			mask.mask = (void *)calloc(mask.mask_len, sizeof(char));
 			XISetMask(mask.mask, XI_KeyPress);
 			XISetMask(mask.mask, XI_KeyRelease);
-			XISelectEvents(main_window->display, DefaultRootWindow(main_window->display), &mask, 1);
+			XISelectEvents(display, DefaultRootWindow(display), &mask, 1);
 			free(mask.mask);
 		}
 		else {
-			XGrabKey(main_window->display, AnyKey, AnyModifier, window, FALSE, GrabModeAsync, GrabModeAsync);
+			XGrabKey(display, AnyKey, AnyModifier, window, FALSE, GrabModeAsync, GrabModeAsync);
 		}
 	}
 	else
@@ -259,43 +256,43 @@ static void grab_all_keys(Window window, int use_x_input_api, int is_grab)
 			mask.mask_len = XIMaskLen(XI_KeyPress);
 			mask.mask = (void *)calloc(mask.mask_len, sizeof(char));
 			XISetMask(mask.mask, 0);
-			XISelectEvents(main_window->display, DefaultRootWindow(main_window->display), &mask, 1);
+			XISelectEvents(display, DefaultRootWindow(display), &mask, 1);
 			free(mask.mask);
 		}
 		else {
 			// Ungrab all keys in app window...
-			XUngrabKey(main_window->display, AnyKey, AnyModifier, window);
+			XUngrabKey(display, AnyKey, AnyModifier, window);
 		}
 	}
 
-	XSelectInput(main_window->display, window, FOCUS_CHANGE_MASK);
+	XSelectInput(display, window, FOCUS_CHANGE_MASK);
 }
 
-static int focus_get_focus_status(struct _focus *p, int *forced_mode, int *focus_status, int *autocompletion_mode)
+static int focus_get_focus_status(struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *focus_status, int *autocompletion_mode)
 {
-	int focus = get_focus(p, forced_mode, focus_status, autocompletion_mode);
+	int focus = get_focus(p, display, config, forced_mode, focus_status, autocompletion_mode);
 
 	p->last_focus = *focus_status;
-	if (!xconfig->tracking_input)
+	if (!config->tracking_input)
 		p->last_focus = FOCUS_EXCLUDED;
 
 	return focus;
 }
 
-static void focus_update_grab_events(struct _focus *p, int use_x_input_api, int mode)
+static void focus_update_grab_events(struct _focus *p, Display* display, struct _xneur_config *config, int use_x_input_api, int mode)
 {
-	char *owner_window_name = get_wm_class_name(main_window->display, p->owner_window);
+	char *owner_window_name = get_wm_class_name(display, p->owner_window);
 
 	if ((mode == LISTEN_DONTGRAB_INPUT) || (p->last_focus == FOCUS_EXCLUDED))
 	{
-		grab_button(FALSE);
-		grab_all_keys(p->owner_window, use_x_input_api, FALSE);
+		grab_button(display, FALSE);
+		grab_all_keys(display, p->owner_window, use_x_input_api, FALSE);
 	}
 	else
 	{
-		if (xconfig->tracking_mouse)
-			grab_button(TRUE);
-		grab_all_keys(p->owner_window, use_x_input_api, TRUE);
+		if (config->tracking_mouse)
+			grab_button(display, TRUE);
+		grab_all_keys(display, p->owner_window, use_x_input_api, TRUE);
 	}
 
 	/*
@@ -304,8 +301,8 @@ static void focus_update_grab_events(struct _focus *p, int use_x_input_api, int 
 		log_message (DEBUG, _("Interception of events in the window (ID %d) with name '%s' OFF"), p->owner_window, owner_window_name);
 
 		// Event unmasking
-		grab_button(p->owner_window, FALSE);
-		grab_all_keys(p->owner_window, use_x_input_api, FALSE);
+		grab_button(display, p->owner_window, FALSE);
+		grab_all_keys(display, p->owner_window, use_x_input_api, FALSE);
 	}
 	else
 	{
@@ -315,14 +312,14 @@ static void focus_update_grab_events(struct _focus *p, int use_x_input_api, int 
 		// Grabbing key and button
 		if (p->last_focus != FOCUS_EXCLUDED)
 		{
-			if (xconfig->tracking_mouse)
-			  grab_button(p->parent_window, TRUE);
-			grab_all_keys(p->owner_window, use_x_input_api, TRUE);
+			if (config->tracking_mouse)
+			  grab_button(display, p->parent_window, TRUE);
+			grab_all_keys(display, p->owner_window, use_x_input_api, TRUE);
 		}
 		else
 		{
-			grab_button(p->owner_window, FALSE);
-			grab_all_keys(p->owner_window, use_x_input_api, FALSE);
+			grab_button(display, p->owner_window, FALSE);
+			grab_all_keys(display, p->owner_window, use_x_input_api, FALSE);
 		}
 	}
 	*/

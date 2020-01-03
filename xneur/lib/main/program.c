@@ -355,7 +355,7 @@ static void program_update(struct _program *p)
 {
 	p->last_window = p->focus->owner_window;
 
-	int status = p->focus->get_focus_status(p->focus, &p->app_forced_mode, &p->app_focus_mode, &p->app_autocompletion_mode);
+	int status = p->focus->get_focus_status(p->focus, main_window->display, xconfig, &p->app_forced_mode, &p->app_focus_mode, &p->app_autocompletion_mode);
 
 	if (status == FOCUS_UNCHANGED)
 		return;
@@ -366,7 +366,7 @@ static void program_update(struct _program *p)
 	if (p->app_focus_mode == FOCUS_EXCLUDED)
 		listen_mode = LISTEN_DONTGRAB_INPUT;
 
-	p->focus->update_grab_events(p->focus, p->has_x_input_extension, listen_mode);
+	p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, listen_mode);
 
 	program_layout_update(p);
 
@@ -526,7 +526,7 @@ static void program_process_input(struct _program *p)
 			case LeaveNotify:
 			case EnterNotify:
 			{
-				if (((Window)p->focus->get_focused_window(p->focus) != (Window)p->focus->owner_window)
+				if (((Window)p->focus->get_focused_window(p->focus, main_window->display) != (Window)p->focus->owner_window)
 				    && (type == FocusIn))
 				{
 					log_message(TRACE, _("Received FocusIn on window %d (event type %d)"), p->event->event.xfocus.window, type);
@@ -535,7 +535,7 @@ static void program_process_input(struct _program *p)
 			}
 			case FocusOut:
 			{
-				if (((Window)p->focus->get_focused_window(p->focus) != (Window)p->focus->owner_window)
+				if (((Window)p->focus->get_focused_window(p->focus, main_window->display) != (Window)p->focus->owner_window)
 				    && (type == FocusOut))
 				{
 					log_message(TRACE, _("Received FocusOut on window %d (event type %d)"), p->event->event.xfocus.window, type);
@@ -614,7 +614,7 @@ static void program_process_input(struct _program *p)
 							p->buffer->save_and_clear(p->buffer, p->handle, p->focus->owner_window);
 							p->correction_buffer->clear(p->correction_buffer, p->handle);
 							p->correction_action = ACTION_NONE;
-							if ((Window)p->focus->get_focused_window(p->focus) != (Window)p->focus->owner_window)
+							if ((Window)p->focus->get_focused_window(p->focus, main_window->display) != (Window)p->focus->owner_window)
 							{
 								program_update(p);
 							}
@@ -920,24 +920,24 @@ static void program_on_key_action(struct _program *p, int type, KeySym key, int 
 			if (key == XK_Caps_Lock)
 			{
 				//log_message(ERROR, "	Set Caps to %d", (state & 0x01)?0:1);
-				p->focus->update_grab_events(p->focus, p->has_x_input_extension, LISTEN_DONTGRAB_INPUT);
+				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, LISTEN_DONTGRAB_INPUT);
 				//toggle_lock (main_window->keymap->capslock_mask, (state & 0x01)?0:1);
 				click_key (XK_Caps_Lock);
-				p->focus->update_grab_events(p->focus, p->has_x_input_extension, LISTEN_GRAB_INPUT);
+				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, LISTEN_GRAB_INPUT);
 			}
 			if (key == XK_Num_Lock)
 			{
 				//log_message (ERROR, "Need reset Num");
-				p->focus->update_grab_events(p->focus, p->has_x_input_extension, LISTEN_DONTGRAB_INPUT);
+				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, LISTEN_DONTGRAB_INPUT);
 				click_key (XK_Num_Lock);
-				p->focus->update_grab_events(p->focus, p->has_x_input_extension, LISTEN_GRAB_INPUT);
+				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, LISTEN_GRAB_INPUT);
 			}
 			if (key == XK_Scroll_Lock)
 			{
 				//log_message (ERROR, "Need reset Scroll");
-				p->focus->update_grab_events(p->focus, p->has_x_input_extension, LISTEN_DONTGRAB_INPUT);
+				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, LISTEN_DONTGRAB_INPUT);
 				click_key (XK_Scroll_Lock);
-				p->focus->update_grab_events(p->focus, p->has_x_input_extension, LISTEN_GRAB_INPUT);
+				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, LISTEN_GRAB_INPUT);
 			}
 		}
 

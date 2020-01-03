@@ -45,9 +45,9 @@ struct _focus
 	Window last_parent_window;	// Last grab parent window
 	int last_focus;			// Last focus status
 
-	int  (*get_focus_status) (struct _focus *p, int *forced_mode, int *focus_status, int *autocompletion_mode);
-	int  (*get_focused_window) (struct _focus *p);
-	void (*update_grab_events) (struct _focus *p, int use_x_input_api, int mode);
+	int  (*get_focus_status) (struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *focus_status, int *autocompletion_mode);
+	int  (*get_focused_window) (struct _focus *p, Display* display);
+	void (*update_grab_events) (struct _focus *p, Display* display, struct _xneur_config *config, int use_x_input_api, int mode);
 	void (*uninit) (struct _focus *p);
 };
 
