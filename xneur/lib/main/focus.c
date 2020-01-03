@@ -18,6 +18,7 @@
  */
 
 #include <X11/XKBlib.h>
+#include <X11/extensions/XInput2.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -204,6 +205,70 @@ static int get_focus(struct _focus *p, int *forced_mode, int *focus_status, int 
 	if (new_app_name != NULL)
 		free(new_app_name);
 	return FOCUS_CHANGED;
+}
+
+static void grab_button(int is_grab)
+{
+	if (is_grab)
+	{
+		XIEventMask mask;
+		mask.deviceid = XIAllMasterDevices;
+		mask.mask_len = XIMaskLen(XI_RawButtonPress);
+		mask.mask = (void *)calloc(mask.mask_len, sizeof(char));
+		XISetMask(mask.mask, XI_RawButtonPress);
+		XISelectEvents(main_window->display, DefaultRootWindow(main_window->display), &mask, 1);
+		free(mask.mask);
+	}
+	else
+	{
+		XIEventMask mask;
+		mask.deviceid = XIAllMasterDevices;
+		mask.mask_len = XIMaskLen(XI_RawButtonPress);
+		mask.mask = (void *)calloc(mask.mask_len, sizeof(char));
+		XISetMask(mask.mask, 0);
+		XISelectEvents(main_window->display, DefaultRootWindow(main_window->display), &mask, 1);
+		free(mask.mask);
+	}
+}
+
+static void grab_all_keys(Window window, int use_x_input_api, int is_grab)
+{
+	if (is_grab)
+	{
+		// Grab all keys...
+		if (use_x_input_api) {
+			XIEventMask mask;
+			mask.deviceid = XIAllDevices;
+			mask.mask_len = XIMaskLen(XI_KeyPress)+
+							XIMaskLen(XI_KeyRelease);
+			mask.mask = (void *)calloc(mask.mask_len, sizeof(char));
+			XISetMask(mask.mask, XI_KeyPress);
+			XISetMask(mask.mask, XI_KeyRelease);
+			XISelectEvents(main_window->display, DefaultRootWindow(main_window->display), &mask, 1);
+			free(mask.mask);
+		}
+		else {
+			XGrabKey(main_window->display, AnyKey, AnyModifier, window, FALSE, GrabModeAsync, GrabModeAsync);
+		}
+	}
+	else
+	{
+		if (use_x_input_api) {
+			XIEventMask mask;
+			mask.deviceid = XIAllMasterDevices;
+			mask.mask_len = XIMaskLen(XI_KeyPress);
+			mask.mask = (void *)calloc(mask.mask_len, sizeof(char));
+			XISetMask(mask.mask, 0);
+			XISelectEvents(main_window->display, DefaultRootWindow(main_window->display), &mask, 1);
+			free(mask.mask);
+		}
+		else {
+			// Ungrab all keys in app window...
+			XUngrabKey(main_window->display, AnyKey, AnyModifier, window);
+		}
+	}
+
+	XSelectInput(main_window->display, window, FOCUS_CHANGE_MASK);
 }
 
 static int focus_get_focus_status(struct _focus *p, int *forced_mode, int *focus_status, int *autocompletion_mode)
