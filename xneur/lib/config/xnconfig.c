@@ -1116,7 +1116,6 @@ static int parse_config_file(struct _xneur_config *p, struct _xneur_handle *hand
 
 static void free_structures(struct _xneur_config *p)
 {
-	p->window_layouts->uninit(p->window_layouts);
 	p->manual_apps->uninit(p->manual_apps);
 	p->auto_apps->uninit(p->auto_apps);
 	p->layout_remember_apps->uninit(p->layout_remember_apps);
@@ -1302,7 +1301,6 @@ static void xneur_config_clear(struct _xneur_config *p)
 {
 	free_structures(p);
 
-	p->window_layouts		= list_char_init();
 	p->manual_apps			= list_char_init();
 	p->auto_apps			= list_char_init();
 	p->layout_remember_apps		= list_char_init();
@@ -1858,7 +1856,6 @@ struct _xneur_config* xneur_config_init(void)
 	p->dont_send_key_release_apps = list_char_init();
 	p->delay_send_key_apps	= list_char_init();
 
-	p->window_layouts		= list_char_init();
 	p->abbreviations		= list_char_init();
 	p->autocompletion_excluded_apps	= list_char_init();
 	p->plugins		= list_char_init();

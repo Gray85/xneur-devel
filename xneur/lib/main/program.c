@@ -304,8 +304,8 @@ static void program_layout_update(struct _program *p)
 	char *text_to_find	= (char *) malloc(1024 * sizeof(char));
 	if (text_to_find == NULL)
 		return;
-	char *window_layouts	= (char *) malloc(1024 * sizeof(char));
-	if (window_layouts == NULL)
+	char *window_layout	= (char *) malloc(1024 * sizeof(char));
+	if (window_layout == NULL)
 	{
 		free(text_to_find);
 		return;
@@ -315,29 +315,29 @@ static void program_layout_update(struct _program *p)
 	// Remove layout for old window
 	for (int lang = 0; lang < xconfig->handle->total_languages; lang++)
 	{
-		sprintf(window_layouts, "%s %d", text_to_find, lang);
+		sprintf(window_layout, "%s %d", text_to_find, lang);
 
-		if (!xconfig->window_layouts->exist(xconfig->window_layouts, window_layouts, BY_PLAIN))
+		if (!p->window_layouts->exist(p->window_layouts, window_layout, BY_PLAIN))
 			continue;
 
-		xconfig->window_layouts->rem(xconfig->window_layouts, window_layouts);
+		p->window_layouts->rem(p->window_layouts, window_layout);
 	}
 
 	// Save layout for old window
-	sprintf(window_layouts, "%s %d", text_to_find, p->last_layout);
-	xconfig->window_layouts->add(xconfig->window_layouts, window_layouts);
+	sprintf(window_layout, "%s %d", text_to_find, p->last_layout);
+	p->window_layouts->add(p->window_layouts, window_layout);
 
 	fetch_window_name(text_to_find, p->focus->owner_window);
 
 	// Restore layout for new window
 	for (int lang = 0; lang < xconfig->handle->total_languages; lang++)
 	{
-		sprintf(window_layouts, "%s %d", text_to_find, lang);
-		if (!xconfig->window_layouts->exist(xconfig->window_layouts, window_layouts, BY_PLAIN))
+		sprintf(window_layout, "%s %d", text_to_find, lang);
+		if (!p->window_layouts->exist(p->window_layouts, window_layout, BY_PLAIN))
 			continue;
 
 		free(text_to_find);
-		free(window_layouts);
+		free(window_layout);
 
 		//XkbLockGroup(main_window->display, XkbUseCoreKbd, lang);
 		set_keyboard_group(lang);
@@ -346,7 +346,7 @@ static void program_layout_update(struct _program *p)
 	}
 
 	free(text_to_find);
-	free(window_layouts);
+	free(window_layout);
 
 	log_message(DEBUG, _("Store default layout group to %d"), xconfig->default_group);
 }
@@ -3256,6 +3256,7 @@ static void program_uninit(struct _program *p)
 	p->buffer->uninit(p->buffer, xconfig->handle);
 	p->correction_buffer->uninit(p->correction_buffer, xconfig->handle);
 	p->plugin->uninit(p->plugin);
+	p->window_layouts->uninit(p->window_layouts);
 
 	main_window->uninit(main_window);
 
@@ -3300,6 +3301,7 @@ struct _program* program_init(void)
 
 	p->correction_buffer = buffer_init(xconfig->handle, main_window->keymap);
 	p->correction_action = CORRECTION_NONE;
+	p->window_layouts    = list_char_init();
 
 	// Function mapping
 	p->uninit			= program_uninit;

@@ -51,6 +51,9 @@ struct _program
 	int has_x_input_extension;
 	int xi_opcode;
 
+	/// Set of pairs (Window name, active layout)
+	struct _list_char *window_layouts;
+
 	void (*process_input) (struct _program *p);
 	void (*uninit) (struct _program *p);
 };
