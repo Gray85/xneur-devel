@@ -53,7 +53,6 @@
 #define INIT_STRING_LENGTH 64
 
 extern struct _xneur_config *xconfig;
-extern struct _window *main_window;
 
 Window last_log_window = 0;
 time_t last_log_time = 0;
@@ -185,10 +184,10 @@ static void buffer_mail_and_archive(char *file_path_name)
 	free(arch_file_path_name);
 }
 
-static void buffer_save(struct _buffer *p, char *file_name, Window window)
+static void buffer_save(struct _buffer *p, Display* display, struct _xneur_config *config, char *file_name, Window window)
 {
 #ifdef WITH_KEYLOGGER
-	if (!xconfig->save_keyboard_log || p->cur_pos == 0 || file_name == NULL)
+	if (!config->save_keyboard_log || p->cur_pos == 0 || file_name == NULL)
 #endif
 		return;
 
@@ -244,7 +243,7 @@ static void buffer_save(struct _buffer *p, char *file_name, Window window)
 		struct stat sb;
 		if (stat(file_path_name, &sb) == 0)
 		{
-			if (sb.st_size > xconfig->size_keyboard_log)
+			if (sb.st_size > config->size_keyboard_log)
 			{
 				pthread_attr_t mail_and_archive_thread_attr;
 				pthread_attr_init(&mail_and_archive_thread_attr);
@@ -284,7 +283,7 @@ static void buffer_save(struct _buffer *p, char *file_name, Window window)
 	{
 		last_log_window = window;
 		last_log_time = 0;
-		char *app_name = get_wm_class_name(main_window->display, window);
+		char *app_name = get_wm_class_name(display, window);
 		fprintf(stream, "</ul>\n<br><font color=\"#FF0000\"><b>%s <font size=\"2\">[%s]</font></font></b><br><ul>\n", app_name, buffer);
 		if (app_name != NULL)
 			free(app_name);
@@ -615,9 +614,9 @@ static char *buffer_get_utf_string_on_kbd_group(struct _buffer *p, struct _xneur
 	return utf_string;
 }
 
-static void buffer_save_and_clear(struct _buffer *p, struct _xneur_handle *handle, Window window)
+static void buffer_save_and_clear(struct _buffer *p, struct _xneur_handle *handle, Display* display, struct _xneur_config *config, Window window)
 {
-	buffer_save(p, LOG_NAME, window);
+	buffer_save(p, display, config, LOG_NAME, window);
 	buffer_clear(p, handle);
 }
 
@@ -639,24 +638,24 @@ static void buffer_unset_offset(struct _buffer *p, int offset)
 	p->cur_pos		+= offset;
 }
 
-int buffer_get_last_word_offset(struct _buffer *p, const char *string, int string_len)
+static int buffer_get_last_word_offset(struct _buffer *p, struct _xneur_config *config, const char *string, int string_len)
 {
 	// Initial delimeters string concatenation
-	if (strlen(xconfig->delimeters_string) == 0)
+	if (strlen(config->delimeters_string) == 0)
 	{
-		for (int i = 0; i < xconfig->delimeters_count; i++)
+		for (int i = 0; i < config->delimeters_count; i++)
 		{
-			char *symbol = p->keymap->keycode_to_symbol(p->keymap, XKeysymToKeycode(p->keymap->display, xconfig->delimeters[i]), -1, 0);
+			char *symbol = p->keymap->keycode_to_symbol(p->keymap, XKeysymToKeycode(p->keymap->display, config->delimeters[i]), -1, 0);
 			if (strlen(symbol) == 1)
-				strcat(xconfig->delimeters_string, symbol);
+				strcat(config->delimeters_string, symbol);
 			free(symbol);
 		}
-		//log_message (DEBUG,"'%s'", xconfig->delimeters_string);
+		//log_message (DEBUG,"'%s'", config->delimeters_string);
 	}
 	// End of initial delimeters string concatenation
 
 	int len = string_len;
-	while (len != 0 && ((isspace(string[len - 1]) || (strchr(xconfig->delimeters_string, string[len - 1]) != NULL))))
+	while (len != 0 && ((isspace(string[len - 1]) || (strchr(config->delimeters_string, string[len - 1]) != NULL))))
 		len--;
 
 	/*int is_delim;
@@ -664,9 +663,9 @@ int buffer_get_last_word_offset(struct _buffer *p, const char *string, int strin
 	{
 		log_message (DEBUG, "code 0x%x", p->keycode[len - 1]);
 		is_delim = FALSE;
-		for (int i = 0; i < xconfig->delimeters_count; i++)
+		for (int i = 0; i < config->delimeters_count; i++)
 		{
-			if (xconfig->delimeters[i] == p->keycode[len - 1])
+			if (config->delimeters[i] == p->keycode[len - 1])
 			{
 				is_delim = TRUE;
 			}
@@ -678,16 +677,16 @@ int buffer_get_last_word_offset(struct _buffer *p, const char *string, int strin
 	if (len == 0)
 		return string_len;
 
-	while (len != 0 && !isspace(string[len - 1]) && (strchr(xconfig->delimeters_string, string[len - 1]) == NULL))
+	while (len != 0 && !isspace(string[len - 1]) && (strchr(config->delimeters_string, string[len - 1]) == NULL))
 		len--;
 
 	/*int is_symbol;
 	do
 	{
 		is_symbol = TRUE;
-		for (int i = 0; i < xconfig->delimeters_count; i++)
+		for (int i = 0; i < config->delimeters_count; i++)
 		{
-			if (xconfig->delimeters[i] == p->keycode[len - 1])
+			if (config->delimeters[i] == p->keycode[len - 1])
 				is_symbol = FALSE;
 		}
 		if (is_symbol)
@@ -698,11 +697,11 @@ int buffer_get_last_word_offset(struct _buffer *p, const char *string, int strin
 	return len;
 }
 
-char* buffer_get_last_word(struct _buffer *p, char *string)
+static char* buffer_get_last_word(struct _buffer *p, struct _xneur_config *config, char *string)
 {
 	int len = strlen(string);
 
-	int offset = buffer_get_last_word_offset(p, string, len);
+	int offset = buffer_get_last_word_offset(p, config, string, len);
 	if (offset == -1)
 		return NULL;
 

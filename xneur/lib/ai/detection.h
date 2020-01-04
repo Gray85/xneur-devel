@@ -24,9 +24,10 @@
 
 #include "buffer.h"
 #include "xneur.h"
+#include "xnconfig.h"
 
-int check_lang(struct _xneur_handle *handle, struct _buffer *p, int cur_lang);
+int check_lang(struct _xneur_handle *handle, struct _xneur_config *config, struct _buffer *p, int cur_lang);
 
-int check_lang_with_similar_words(struct _xneur_handle *handle, struct _buffer *p, int cur_lang);
+int check_lang_with_similar_words(struct _xneur_handle *handle, struct _xneur_config *config, struct _buffer *p, int cur_lang);
 
 #endif /* _DETECTION_H_ */

@@ -23,6 +23,7 @@
 #include <X11/XKBlib.h>
 
 #include "xneur.h"
+#include "xnconfig.h"
 #include "keymap.h"
 
 struct _buffer_content
@@ -47,7 +48,7 @@ struct _buffer
 	int cur_pos;		// Current filled size
 
 	void (*clear) (struct _buffer *p, struct _xneur_handle *handle);
-	void (*save_and_clear) (struct _buffer *p, struct _xneur_handle *handle, Window window);
+	void (*save_and_clear) (struct _buffer *p, struct _xneur_handle *handle, Display* display, struct _xneur_config *config, Window window);
 	void (*set_lang_mask) (struct _buffer *p, int group);
 	void (*set_uncaps_mask) (struct _buffer *p);
 	void (*set_caps_mask) (struct _buffer *p);
@@ -60,8 +61,8 @@ struct _buffer
 	char*(*get_utf_string_on_kbd_group) (struct _buffer *p, struct _xneur_handle *handle, int group);
 	void (*set_offset) (struct _buffer *p, int offset);
 	void (*unset_offset) (struct _buffer *p, int offset);
-	char*(*get_last_word) (struct _buffer *p, char *string);
-	int (*get_last_word_offset) (struct _buffer *p, const char *string, int string_len);
+	char*(*get_last_word) (struct _buffer *p, struct _xneur_config *config, char *string);
+	int (*get_last_word_offset) (struct _buffer *p, struct _xneur_config *config, const char *string, int string_len);
 	void (*uninit) (struct _buffer *p, struct _xneur_handle *handle);
 };
 
