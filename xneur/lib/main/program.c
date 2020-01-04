@@ -293,12 +293,12 @@ static void toggle_lock(int mask, int state)
 	}
 }
 
-static void program_layout_update(struct _program *p)
+static void program_layout_update(struct _program *p, int layout, Window old_window, Window new_window)
 {
 	if (!xconfig->remember_layout)
 		return;
 
-	if ((Window) p->last_window == p->focus->owner_window)
+	if (old_window == new_window)
 		return;
 
 	char *text_to_find	= (char *) malloc(1024 * sizeof(char));
@@ -311,7 +311,7 @@ static void program_layout_update(struct _program *p)
 		return;
 	}
 
-	fetch_window_name(text_to_find, p->last_window);
+	fetch_window_name(text_to_find, old_window);
 	// Remove layout for old window
 	for (int lang = 0; lang < p->handle->total_languages; lang++)
 	{
@@ -324,10 +324,10 @@ static void program_layout_update(struct _program *p)
 	}
 
 	// Save layout for old window
-	sprintf(window_layout, "%s %d", text_to_find, p->last_layout);
+	sprintf(window_layout, "%s %d", text_to_find, layout);
 	p->window_layouts->add(p->window_layouts, window_layout);
 
-	fetch_window_name(text_to_find, p->focus->owner_window);
+	fetch_window_name(text_to_find, new_window);
 
 	// Restore layout for new window
 	for (int lang = 0; lang < p->handle->total_languages; lang++)
@@ -355,6 +355,7 @@ static void program_update(struct _program *p)
 {
 	p->last_window = p->focus->owner_window;
 
+	// Can update `p->focus->owner_window`
 	int status = p->focus->get_focus_status(p->focus, main_window->display, xconfig, &p->app_forced_mode, &p->app_focus_mode, &p->app_autocompletion_mode);
 
 	if (status == FOCUS_UNCHANGED)
@@ -368,7 +369,7 @@ static void program_update(struct _program *p)
 
 	p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, listen_mode);
 
-	program_layout_update(p);
+	program_layout_update(p, p->last_layout, p->last_window, p->focus->owner_window);
 
 	p->buffer->save_and_clear(p->buffer, p->handle, main_window->display, xconfig, p->last_window);
 	p->correction_buffer->clear(p->correction_buffer, p->handle);
