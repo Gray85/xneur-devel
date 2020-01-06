@@ -41,14 +41,13 @@ const char *verbose_focus_status[]	= {"Processed", "Excluded"};
 
 
 // Private
-int focus_get_focused_window(struct _focus *p, Display* display)
+int focus_focus_changed(struct _focus *p, Display* display)
 {
-	if (p) {};
 	Window new_window;
 	int revert_to;
 	XGetInputFocus(display, &new_window, &revert_to);
 
-	return new_window;
+	return new_window != p->owner_window;
 }
 
 static int get_focus(struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *excluded, int *autocompletion_mode)
@@ -343,7 +342,7 @@ struct _focus* focus_init(void)
 
 	// Functions mapping
 	p->get_focus_status	= focus_get_focus_status;
-	p->get_focused_window = focus_get_focused_window;
+	p->focus_changed = focus_focus_changed;
 	p->update_grab_events	= focus_update_grab_events;
 	p->uninit		= focus_uninit;
 

@@ -37,7 +37,7 @@ struct _focus
 	int last_excluded;			// Last focus status
 
 	int  (*get_focus_status) (struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *focus_status, int *autocompletion_mode);
-	int  (*get_focused_window) (struct _focus *p, Display* display);
+	int  (*focus_changed) (struct _focus *p, Display* display);
 	void (*update_grab_events) (struct _focus *p, Display* display, struct _xneur_config *config, int use_x_input_api, int mode);
 	void (*uninit) (struct _focus *p);
 };
