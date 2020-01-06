@@ -321,8 +321,6 @@ static void focus_update_grab_events(struct _focus *p, Display* display, struct 
 	}
 	*/
 
-	p->last_parent_window = p->parent_window;
-
 	if (owner_window_name != NULL)
 		free(owner_window_name);
 }
