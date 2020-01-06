@@ -1505,6 +1505,28 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 	return TRUE;
 }
 
+static int change(struct _program *p, int action, int check_similar_words) {
+	int cur_lang = get_curr_keyboard_group(main_window->display);
+	int new_lang = check_similar_words
+		? check_lang_with_similar_words(p->handle, xconfig, p->buffer, cur_lang)
+		: check_lang(p->handle, xconfig, p->buffer, cur_lang);
+
+	if (new_lang == NO_LANGUAGE) {
+		log_message(DEBUG, _("No language found to change to"));
+		return FALSE;
+	}
+
+	if (new_lang == cur_lang) {
+		return FALSE;
+	}
+
+	program_change_word(p, action + new_lang);
+	show_notify(NOTIFY_AUTOMATIC_CHANGE_WORD, NULL);
+
+	p->last_layout = new_lang;
+
+	return TRUE;
+}
 static int program_check_lang_last_word(struct _program *p)
 {
 	if (p->handle->languages[get_curr_keyboard_group(main_window->display)].excluded)
@@ -1526,45 +1548,7 @@ static int program_check_lang_last_word(struct _program *p)
 	    (p->buffer->content[p->buffer->cur_pos-1] == 11))   // Tab
 			return FALSE;
 
-	int cur_lang = get_curr_keyboard_group(main_window->display);
-
-	int new_lang = NO_LANGUAGE;
-	if (xconfig->check_similar_words)
-	{
-		new_lang = check_lang_with_similar_words(p->handle, xconfig, p->buffer, cur_lang);
-	}
-	else
-	{
-		new_lang = check_lang(p->handle, xconfig, p->buffer, cur_lang);
-	}
-
-	if (new_lang == NO_LANGUAGE)
-	{
-		log_message(DEBUG, _("No language found to change to"));
-		return FALSE;
-	}
-
-	if (new_lang == cur_lang)
-	{
-		return FALSE;
-	}
-
-	int change_action = CHANGE_WORD_TO_LAYOUT_0;
-	if (new_lang == 0)
-		change_action = CHANGE_WORD_TO_LAYOUT_0;
-	else if (new_lang == 1)
-		change_action = CHANGE_WORD_TO_LAYOUT_1;
-	else if (new_lang == 2)
-		change_action = CHANGE_WORD_TO_LAYOUT_2;
-	else
-		change_action = CHANGE_WORD_TO_LAYOUT_3;
-
-	program_change_word(p, change_action);
-	show_notify(NOTIFY_AUTOMATIC_CHANGE_WORD, NULL);
-
-	p->last_layout = new_lang;
-
-	return TRUE;
+	return change(p, CHANGE_WORD_TO_LAYOUT_0, xconfig->check_similar_words);
 }
 
 static int program_check_lang_last_syllable(struct _program *p)
@@ -1585,34 +1569,7 @@ static int program_check_lang_last_syllable(struct _program *p)
 	if (strlen(word) < 3)
 		return FALSE;
 
-	int cur_lang = get_curr_keyboard_group(main_window->display);
-	int new_lang = check_lang(p->handle, xconfig, p->buffer, cur_lang);
-
-	if (new_lang == NO_LANGUAGE)
-	{
-		log_message(DEBUG, _("No language found to change to"));
-		return FALSE;
-	}
-
-	if (new_lang == cur_lang)
-		return FALSE;
-
-	int change_action = 0;
-	if (new_lang == 0)
-		change_action = CHANGE_SYLL_TO_LAYOUT_0;
-	else if (new_lang == 1)
-		change_action = CHANGE_SYLL_TO_LAYOUT_1;
-	else if (new_lang == 2)
-		change_action = CHANGE_SYLL_TO_LAYOUT_2;
-	else
-		change_action = CHANGE_SYLL_TO_LAYOUT_3;
-
-	program_change_word(p, change_action);
-	show_notify(NOTIFY_AUTOMATIC_CHANGE_WORD, NULL);
-
-	p->last_layout = new_lang;
-
-	return TRUE;
+	return change(p, CHANGE_SYLL_TO_LAYOUT_0, FALSE);
 }
 
 static void program_check_caps_last_word(struct _program *p)
