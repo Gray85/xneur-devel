@@ -276,6 +276,21 @@ static void focus_update_grab_events(struct _focus *p, Display* display, struct 
 	grab_all_keys(display, p->owner_window, use_x_input_api, grab_input);
 }
 
+static void focus_click_key(struct _focus *p, Display* display, struct _xneur_config *config, int use_x_input_api, int excluded, KeySym keysym)
+{
+	focus_update_grab_events(p, display, config, use_x_input_api, FALSE);
+
+	KeyCode keycode = XKeysymToKeycode(display, keysym);
+
+	XTestFakeKeyEvent(display, keycode, TRUE, 0); // key press event
+	XTestFakeKeyEvent(display, keycode ,FALSE, 0); // key release event
+	XFlush(display);
+
+	if (!excluded) {
+		focus_update_grab_events(p, display, config, use_x_input_api, TRUE);
+	}
+}
+
 static void focus_uninit(struct _focus *p)
 {
 	if (p != NULL)
@@ -293,6 +308,7 @@ struct _focus* focus_init(void)
 	p->get_focus_status	= focus_get_focus_status;
 	p->focus_changed = focus_focus_changed;
 	p->update_grab_events	= focus_update_grab_events;
+	p->click_key	= focus_click_key;
 	p->uninit		= focus_uninit;
 
 	return p;

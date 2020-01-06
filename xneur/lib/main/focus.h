@@ -37,6 +37,7 @@ struct _focus
 	int  (*get_focus_status) (struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *focus_status, int *autocompletion_mode);
 	int  (*focus_changed) (struct _focus *p, Display* display);
 	void (*update_grab_events) (struct _focus *p, Display* display, struct _xneur_config *config, int use_x_input_api, int mode);
+	void (*click_key) (struct _focus *p, Display* display, struct _xneur_config *config, int use_x_input_api, int included, KeySym keysym);
 	void (*uninit) (struct _focus *p);
 };
 
