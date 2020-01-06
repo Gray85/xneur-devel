@@ -60,7 +60,7 @@ static int get_focus(struct _focus *p, Display* display, struct _xneur_config *c
 	char *new_app_name = NULL;
 
 	// Clear masking on unfocused window
-	//p->update_grab_events(p, display, config, LISTEN_DONTGRAB_INPUT);
+	//p->update_grab_events(p, display, config, FALSE);
 
 	Window new_window;
 	int show_message = TRUE;
@@ -277,11 +277,11 @@ static int focus_get_focus_status(struct _focus *p, Display* display, struct _xn
 	return focus;
 }
 
-static void focus_update_grab_events(struct _focus *p, Display* display, struct _xneur_config *config, int use_x_input_api, int mode)
+static void focus_update_grab_events(struct _focus *p, Display* display, struct _xneur_config *config, int use_x_input_api, int grab)
 {
 	char *owner_window_name = get_wm_class_name(display, p->owner_window);
 
-	if ((mode == LISTEN_DONTGRAB_INPUT) || (p->last_focus == FOCUS_EXCLUDED))
+	if (!grab || (p->last_focus == FOCUS_EXCLUDED))
 	{
 		grab_button(display, FALSE);
 		grab_all_keys(display, p->owner_window, use_x_input_api, FALSE);
@@ -294,7 +294,7 @@ static void focus_update_grab_events(struct _focus *p, Display* display, struct 
 	}
 
 	/*
-	if (mode == LISTEN_DONTGRAB_INPUT)
+	if (!grab)
 	{
 		log_message (DEBUG, _("Interception of events in the window (ID %d) with name '%s' OFF"), p->owner_window, owner_window_name);
 
