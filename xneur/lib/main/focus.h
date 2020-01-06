@@ -22,9 +22,6 @@
 
 #include <X11/XKBlib.h>
 
-#define FOCUS_PROCESSED		0
-#define FOCUS_EXCLUDED		1
-
 #define FORCE_MODE_NORMAL	0
 #define FORCE_MODE_MANUAL	1
 #define FORCE_MODE_AUTO		2
@@ -37,7 +34,7 @@ struct _focus
 	Window owner_window;		// Input focus window
 	Window parent_window;		// Parent widget in window
 	Window last_parent_window;	// Last grab parent window
-	int last_focus;			// Last focus status
+	int last_excluded;			// Last focus status
 
 	int  (*get_focus_status) (struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *focus_status, int *autocompletion_mode);
 	int  (*get_focused_window) (struct _focus *p, Display* display);

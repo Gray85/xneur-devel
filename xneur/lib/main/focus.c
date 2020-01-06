@@ -51,10 +51,10 @@ int focus_get_focused_window(struct _focus *p, Display* display)
 	return new_window;
 }
 
-static int get_focus(struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *focus_status, int *autocompletion_mode)
+static int get_focus(struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *excluded, int *autocompletion_mode)
 {
 	*forced_mode	= FORCE_MODE_NORMAL;
-	*focus_status	= FOCUS_PROCESSED;
+	*excluded	= FALSE;
 	*autocompletion_mode	= AUTOCOMPLETION_INCLUDED;
 
 	char *new_app_name = NULL;
@@ -114,15 +114,15 @@ static int get_focus(struct _focus *p, Display* display, struct _xneur_config *c
 	//if (new_app_name != NULL)
 	//{
 		if (config->excluded_apps->exist(config->excluded_apps, new_app_name, BY_PLAIN))
-			*focus_status = FOCUS_EXCLUDED;
+			*excluded = TRUE;
 
 		if (new_app_name != NULL)
 		{
 			if (strcmp("Gxneur", new_app_name) == 0)
-				*focus_status = FOCUS_EXCLUDED;
+				*excluded = TRUE;
 
 			if (strcmp("Kdeneur", new_app_name) == 0)
-				*focus_status = FOCUS_EXCLUDED;
+				*excluded = TRUE;
 		}
 
 		if (config->auto_apps->exist(config->auto_apps, new_app_name, BY_PLAIN))
@@ -134,7 +134,7 @@ static int get_focus(struct _focus *p, Display* display, struct _xneur_config *c
 			*autocompletion_mode	= AUTOCOMPLETION_EXCLUDED;
 	//}
 	//else
-	//	*focus_status = FOCUS_EXCLUDED;
+	//	*excluded = TRUE;
 
 	Window old_window = p->owner_window;
 	if (new_window == old_window)
@@ -197,7 +197,7 @@ static int get_focus(struct _focus *p, Display* display, struct _xneur_config *c
 			*forced_mode = FORCE_MODE_MANUAL;
 	}
 
-	log_message(DEBUG, _("Process new window (ID %d) with name '%s' (status %s, mode %s)"), new_window, new_app_name, _(verbose_focus_status[*focus_status]), _(verbose_forced_mode[*forced_mode]));
+	log_message(DEBUG, _("Process new window (ID %d) with name '%s' (status %s, mode %s)"), new_window, new_app_name, _(verbose_focus_status[*excluded]), _(verbose_forced_mode[*forced_mode]));
 
 	if (new_app_name != NULL)
 		free(new_app_name);
@@ -268,11 +268,11 @@ static void grab_all_keys(Display* display, Window window, int use_x_input_api, 
 	XSelectInput(display, window, FOCUS_CHANGE_MASK);
 }
 
-static int focus_get_focus_status(struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *focus_status, int *autocompletion_mode)
+static int focus_get_focus_status(struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *excluded, int *autocompletion_mode)
 {
-	int focus = get_focus(p, display, config, forced_mode, focus_status, autocompletion_mode);
+	int focus = get_focus(p, display, config, forced_mode, excluded, autocompletion_mode);
 
-	p->last_focus = config->tracking_input ? *focus_status : FOCUS_EXCLUDED;
+	p->last_excluded = config->tracking_input ? *excluded : TRUE;
 
 	return focus;
 }
@@ -281,7 +281,7 @@ static void focus_update_grab_events(struct _focus *p, Display* display, struct 
 {
 	char *owner_window_name = get_wm_class_name(display, p->owner_window);
 
-	if (!grab || (p->last_focus == FOCUS_EXCLUDED))
+	if (!grab || p->last_excluded)
 	{
 		grab_button(display, FALSE);
 		grab_all_keys(display, p->owner_window, use_x_input_api, FALSE);
@@ -308,7 +308,7 @@ static void focus_update_grab_events(struct _focus *p, Display* display, struct 
 
 		// Event masking
 		// Grabbing key and button
-		if (p->last_focus != FOCUS_EXCLUDED)
+		if (!p->last_excluded)
 		{
 			if (config->tracking_mouse)
 			  grab_button(display, p->parent_window, TRUE);
