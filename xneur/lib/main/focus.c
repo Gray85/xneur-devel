@@ -50,7 +50,7 @@ int focus_focus_changed(struct _focus *p, Display* display)
 	return new_window != p->owner_window;
 }
 
-static int get_focus(struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *excluded, int *autocompletion_mode)
+static int focus_get_focus_status(struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *excluded, int *autocompletion_mode)
 {
 	*forced_mode	= FORCE_MODE_NORMAL;
 	*excluded	= FALSE;
@@ -267,62 +267,13 @@ static void grab_all_keys(Display* display, Window window, int use_x_input_api, 
 	XSelectInput(display, window, FOCUS_CHANGE_MASK);
 }
 
-static int focus_get_focus_status(struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *excluded, int *autocompletion_mode)
-{
-	int focus = get_focus(p, display, config, forced_mode, excluded, autocompletion_mode);
-
-	p->last_excluded = config->tracking_input ? *excluded : TRUE;
-
-	return focus;
-}
-
 static void focus_update_grab_events(struct _focus *p, Display* display, struct _xneur_config *config, int use_x_input_api, int grab)
 {
-	char *owner_window_name = get_wm_class_name(display, p->owner_window);
+	int grab_input = config->tracking_input && grab;
+	int grab_mouse = config->tracking_mouse && grab_input;
 
-	if (!grab || p->last_excluded)
-	{
-		grab_button(display, FALSE);
-		grab_all_keys(display, p->owner_window, use_x_input_api, FALSE);
-	}
-	else
-	{
-		if (config->tracking_mouse)
-			grab_button(display, TRUE);
-		grab_all_keys(display, p->owner_window, use_x_input_api, TRUE);
-	}
-
-	/*
-	if (!grab)
-	{
-		log_message (DEBUG, _("Interception of events in the window (ID %d) with name '%s' OFF"), p->owner_window, owner_window_name);
-
-		// Event unmasking
-		grab_button(display, p->owner_window, FALSE);
-		grab_all_keys(display, p->owner_window, use_x_input_api, FALSE);
-	}
-	else
-	{
-		log_message (DEBUG, _("Interception of events in the window (ID %d) with name '%s' ON"), p->owner_window, owner_window_name);
-
-		// Event masking
-		// Grabbing key and button
-		if (!p->last_excluded)
-		{
-			if (config->tracking_mouse)
-			  grab_button(display, p->parent_window, TRUE);
-			grab_all_keys(display, p->owner_window, use_x_input_api, TRUE);
-		}
-		else
-		{
-			grab_button(display, p->owner_window, FALSE);
-			grab_all_keys(display, p->owner_window, use_x_input_api, FALSE);
-		}
-	}
-	*/
-
-	if (owner_window_name != NULL)
-		free(owner_window_name);
+	grab_button(display, grab_mouse);
+	grab_all_keys(display, p->owner_window, use_x_input_api, grab_input);
 }
 
 static void focus_uninit(struct _focus *p)

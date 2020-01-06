@@ -915,21 +915,21 @@ static void program_on_key_action(struct _program *p, int type, KeySym key, int 
 				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, FALSE);
 				//toggle_lock (main_window->keymap->capslock_mask, (state & 0x01)?0:1);
 				click_key (XK_Caps_Lock);
-				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, TRUE);
+				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, !p->app_excluded);
 			}
 			if (key == XK_Num_Lock)
 			{
 				//log_message (ERROR, "Need reset Num");
 				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, FALSE);
 				click_key (XK_Num_Lock);
-				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, TRUE);
+				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, !p->app_excluded);
 			}
 			if (key == XK_Scroll_Lock)
 			{
 				//log_message (ERROR, "Need reset Scroll");
 				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, FALSE);
 				click_key (XK_Scroll_Lock);
-				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, TRUE);
+				p->focus->update_grab_events(p->focus, main_window->display, xconfig, p->has_x_input_extension, !p->app_excluded);
 			}
 		}
 
@@ -975,7 +975,7 @@ static void program_perform_user_action(struct _program *p, int action)
 
 static void program_perform_auto_action(struct _program *p, int action)
 {
-	if (p->focus->last_excluded)
+	if (!xconfig->tracking_input || p->app_excluded)
 		return;
 
 	struct _buffer *string = p->buffer;
