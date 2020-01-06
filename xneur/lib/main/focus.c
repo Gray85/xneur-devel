@@ -37,7 +37,7 @@
 #include "focus.h"
 
 const char *verbose_forced_mode[]	= {"Default", "Manual", "Automatic"};
-const char *verbose_focus_status[]	= {"Processed", "Changed Focus", "Unchanged Focus", "Excluded"};
+const char *verbose_focus_status[]	= {"Processed", "Excluded"};
 
 
 // Private
@@ -54,7 +54,7 @@ int focus_get_focused_window(struct _focus *p, Display* display)
 static int get_focus(struct _focus *p, Display* display, struct _xneur_config *config, int *forced_mode, int *focus_status, int *autocompletion_mode)
 {
 	*forced_mode	= FORCE_MODE_NORMAL;
-	*focus_status	= FOCUS_NONE;
+	*focus_status	= FOCUS_PROCESSED;
 	*autocompletion_mode	= AUTOCOMPLETION_INCLUDED;
 
 	char *new_app_name = NULL;
@@ -156,7 +156,7 @@ static int get_focus(struct _focus *p, Display* display, struct _xneur_config *c
 			    (width_return == root_width_return) && (height_return == root_height_return))
 				*forced_mode = FORCE_MODE_MANUAL;
 		}
-		return FOCUS_UNCHANGED;
+		return FALSE;
 	}
 
 	log_message(DEBUG, _("Focused window %d"), new_window);
@@ -201,7 +201,7 @@ static int get_focus(struct _focus *p, Display* display, struct _xneur_config *c
 
 	if (new_app_name != NULL)
 		free(new_app_name);
-	return FOCUS_CHANGED;
+	return TRUE;
 }
 
 static void grab_button(Display* display, int is_grab)
@@ -272,9 +272,7 @@ static int focus_get_focus_status(struct _focus *p, Display* display, struct _xn
 {
 	int focus = get_focus(p, display, config, forced_mode, focus_status, autocompletion_mode);
 
-	p->last_focus = *focus_status;
-	if (!config->tracking_input)
-		p->last_focus = FOCUS_EXCLUDED;
+	p->last_focus = config->tracking_input ? *focus_status : FOCUS_EXCLUDED;
 
 	return focus;
 }
