@@ -57,7 +57,7 @@ struct keycode_to_symbol_pair
 #define NumlockMask 0x10
 
 static const int keyboard_groups[]	= {0x00000000, 0x00002000, 0x00004000, 0x00006000};
-static const int state_masks[]		= {0x00, 0x01, 0x80, 0x10}; // None, NumLock, Alt, Shift
+static const int STATE_MASKS[]		= {0x00, 0x01, 0x80}; // None, NumLock, Alt
 
 int get_languages_mask(void)
 {
@@ -260,11 +260,10 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 				{
 					for (int m = 0; m < 3; m++) // Modifiers
 					{
+						int mask = STATE_MASKS[n] | STATE_MASKS[m];
 						event.keycode	= i;
 
-						event.state = get_keycode_mod(lang);
-						event.state |= state_masks[m];
-						event.state |= state_masks[n];
+						event.state = get_keycode_mod(lang) | mask;
 						int nbytes = XLookupString(&event, symbol, 256, NULL, NULL);
 						if (nbytes <= 0)
 							continue;
@@ -280,9 +279,7 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 
 						size_t _symbol_len = strlen(symbol);
 
-						event.state = get_keycode_mod(p->latin_group);
-						event.state |= state_masks[m];
-						event.state |= state_masks[n];
+						event.state = get_keycode_mod(p->latin_group) | mask;
 						nbytes = XLookupString(&event, symbol, 256, NULL, NULL);
 						if (nbytes <= 0)
 							continue;
@@ -292,10 +289,7 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 						free(prev_symbols);
 						free(symbol);
 						*kc = event.keycode;
-						event.state = 0;
-						event.state |= state_masks[m];
-						event.state |= state_masks[n];
-						*modifier = get_keycode_mod(lang) | event.state;
+						*modifier = get_keycode_mod(lang) | mask;
 						if (symbol_len)
 							*symbol_len = _symbol_len;
 						if (preferred_lang)
