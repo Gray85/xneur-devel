@@ -349,13 +349,10 @@ static void buffer_clear(struct _buffer *p, struct _xneur_handle *handle)
 	}
 }
 
-/// Appends symbols of keycode at `pos` to end of keycodes in `buf->i18n_content`
-static void append_to_i18n_content(struct _buffer *buf, struct _xneur_handle *handle, int pos, int languages_mask)
+/// Appends text for each language for specifier keycode and modifier to `buf->i18n_content`
+static void append_to_i18n_content(struct _buffer *buf, int language_count, size_t pos, KeyCode keycode, int modifier)
 {
-	KeyCode keycode = buf->keycode[pos];
-	int modifier    = buf->keycode_modifiers[pos] & languages_mask;
-
-	for (int i = 0; i < handle->total_languages; i++)
+	for (int i = 0; i < language_count; i++)
 	{
 		char *symbol = buf->keymap->keycode_to_symbol(buf->keymap, keycode, i, modifier & (~ShiftMask));
 		char *symbol_unchanged = buf->keymap->keycode_to_symbol(buf->keymap, keycode, i, modifier);
@@ -418,9 +415,14 @@ static void buffer_set_content(struct _buffer *p, struct _xneur_handle *handle, 
 	set_new_size(p, p->cur_pos + 1);
 
 	int languages_mask = get_languages_mask();
-	for (int k = 0; k < p->cur_size - 1; k++)
+	for (int k = 0; k < p->cur_pos; ++k)
 	{
-		append_to_i18n_content(p, handle, k, languages_mask);
+		append_to_i18n_content(p,
+			handle->total_languages,
+			k,
+			p->keycode[k],
+			p->keycode_modifiers[k] & languages_mask
+		);
 	}
 }
 
@@ -502,8 +504,7 @@ static void buffer_add_symbol(struct _buffer *p, struct _xneur_handle *handle, c
 	p->keycode[p->cur_pos] = keycode;
 	p->keycode_modifiers[p->cur_pos] = modifier;
 
-	// i18n_content
-	append_to_i18n_content(p, handle, p->cur_pos, get_languages_mask());
+	append_to_i18n_content(p, handle->total_languages, p->cur_pos, keycode, modifier & get_languages_mask());
 
 	p->cur_pos++;
 	p->content[p->cur_pos] = NULLSYM;
