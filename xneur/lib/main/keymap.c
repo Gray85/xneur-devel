@@ -210,8 +210,7 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 	{
 		*kc		= XKeysymToKeycode(p->display, XK_Return);
 		*modifier	= 0;
-		if (symbol_len)
-			*symbol_len = 1;
+		*symbol_len = 1;
 		return *sym;
 	}
 
@@ -228,9 +227,7 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 	char *symbol		= (char *) malloc((256 + 1) * sizeof(char));
 	char *prev_symbols	= (char *) malloc((256 + 1) * sizeof(char));
 
-	int _preferred_lang = 0;
-	if (preferred_lang)
-		_preferred_lang = *preferred_lang;
+	int _preferred_lang = *preferred_lang;
 
 	for (int _lang = 0; _lang < handle->total_languages; _lang++)
 	{
@@ -288,10 +285,8 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 						free(symbol);
 						*kc = event.keycode;
 						*modifier = get_keycode_mod(lang) | mask;
-						if (symbol_len)
-							*symbol_len = _symbol_len;
-						if (preferred_lang)
-							*preferred_lang = lang;
+						*symbol_len = _symbol_len;
+						*preferred_lang = lang;
 						return sym;
 					}
 				}
