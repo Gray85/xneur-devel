@@ -2561,7 +2561,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 
 				KeyCode kc = 0;
 				int modifier = 0;
-				size_t sym_size = strlen(",");
+				size_t sym_size = 0;
 				int lang = get_curr_keyboard_group(main_window->display);
 				p->buffer->keymap->get_ascii(p->buffer->keymap, p->handle, ",", &lang, &kc, &modifier, &sym_size);
 				p->event->send_xkey(p->event, main_window->display, xconfig, kc, modifier);
@@ -2576,7 +2576,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 				p->event->send_spaces(p->event, main_window->display, xconfig, 2);
 				KeyCode kc = 0;
 				int modifier = 0;
-				size_t sym_size = strlen(",");
+				size_t sym_size = 0;
 				int lang = get_curr_keyboard_group(main_window->display);
 				p->buffer->keymap->get_ascii(p->buffer->keymap, p->handle, " ", &lang, &kc, &modifier, &sym_size);
 				p->buffer->add_symbol(p->buffer, p->handle, ' ', kc, modifier);
@@ -2632,7 +2632,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 
 				KeyCode kc = 0;
 				int modifier = 0;
-				size_t sym_size = strlen("-");
+				size_t sym_size = 0;
 				int lang = get_curr_keyboard_group(main_window->display);
 				p->buffer->keymap->get_ascii(p->buffer->keymap, p->handle, "-", &lang, &kc, &modifier, &sym_size);
 				p->event->send_xkey(p->event, main_window->display, xconfig, kc, modifier);
@@ -2642,7 +2642,7 @@ static void program_change_word(struct _program *p, enum _change_action action)
 
 				kc = 0;
 				modifier = 0;
-				sym_size = strlen(" ");
+				sym_size = 0;
 				p->buffer->keymap->get_ascii(p->buffer->keymap, p->handle, " ", &lang, &kc, &modifier, &sym_size);
 
 				p->correction_buffer->clear(p->correction_buffer, p->handle);
