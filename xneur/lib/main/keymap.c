@@ -215,16 +215,17 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 	}
 
 	char *symbol		= (char *) malloc((256 + 1) * sizeof(char));
-	char *prev_symbols	= (char *) malloc((256 + 1) * sizeof(char));
+	// Symbols, that has text in one language, but do not have in `p->latin_group`
+	char *no_text_in_latin_lang = (char *) malloc((256 + 1) * sizeof(char));
 
 	int count = handle->total_languages;
 	int lang = *preferred_lang;
 	// Loop through all languages, starting from `preferred_lang`
 	while (count-- > 0) {
 		KeySym *keymap = p->keymap;
-		for (int keycode = p->min_keycode; keycode <= p->max_keycode; keycode++)
+		for (int keycode = p->min_keycode; keycode <= p->max_keycode; ++keycode)
 		{
-			prev_symbols[0] = NULLSYM;
+			no_text_in_latin_lang[0] = NULLSYM;
 
 			// Loop through all keysyms on the physical key
 			for (int j = 0; j <= p->keysyms_per_keycode; j++)
@@ -256,12 +257,12 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 
 						symbol[nbytes] = NULLSYM;
 
-						if (strstr(prev_symbols, symbol) != NULL)
-							continue;
-						strcat(prev_symbols, symbol);
-
 						if (strncmp(sym, symbol, nbytes) != 0)
 							continue;
+
+						if (strstr(no_text_in_latin_lang, symbol) != NULL)
+							continue;
+						strcat(no_text_in_latin_lang, symbol);
 
 						event.state = get_keycode_mod(p->latin_group) | mask;
 						if (XLookupString(&event, symbol, 256, NULL, NULL) <= 0) {
@@ -270,7 +271,7 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 
 						char sym = symbol[0];
 
-						free(prev_symbols);
+						free(no_text_in_latin_lang);
 						free(symbol);
 						*kc = keycode;
 						*modifier = get_keycode_mod(lang) | mask;
@@ -285,7 +286,7 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 		lang = (lang + 1) % handle->total_languages;
 	}
 
-	free(prev_symbols);
+	free(no_text_in_latin_lang);
 	free(symbol);
 	return NULLSYM;
 }
