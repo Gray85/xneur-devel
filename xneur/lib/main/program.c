@@ -1937,9 +1937,6 @@ static void program_check_capital_letter_after_dot(struct _program *p)
 		return;
 
 	char *symbol = main_window->keymap->keycode_to_symbol(main_window->keymap, p->event->event.xkey.keycode, get_curr_keyboard_group(main_window->display), p->event->event.xkey.state);
-	if (symbol == NULL)
-		return;
-
 	switch (symbol[0])
 	{
 		case '`':
