@@ -1112,59 +1112,6 @@ static int parse_config_file(struct _xneur_config *p, struct _xneur_handle *hand
 	return TRUE;
 }
 
-static void free_structures(struct _xneur_config *p)
-{
-	p->manual_apps->uninit(p->manual_apps);
-	p->auto_apps->uninit(p->auto_apps);
-	p->layout_remember_apps->uninit(p->layout_remember_apps);
-	p->excluded_apps->uninit(p->excluded_apps);
-	p->autocompletion_excluded_apps->uninit(p->autocompletion_excluded_apps);
-	p->dont_send_key_release_apps->uninit(p->dont_send_key_release_apps);
-	p->delay_send_key_apps->uninit(p->delay_send_key_apps);
-	p->abbreviations->uninit(p->abbreviations);
-
-	p->plugins->uninit(p->plugins);
-
-
-	for (int notify = 0; notify < MAX_NOTIFIES; notify++)
-	{
-		free(p->sounds[notify].file);
-		free(p->osds[notify].file);
-		free(p->popups[notify].file);
-	}
-
-	if (p->actions != NULL)
-	{
-		for (int action = 0; action < p->actions_count; action++)
-		{
-			free(p->actions[action].hotkey.key);
-		}
-	}
-
-	if (p->user_actions != NULL)
-	{
-		for (int action = 0; action < p->user_actions_count; action++)
-		{
-			free(p->user_actions[action].hotkey.key);
-			free(p->user_actions[action].name);
-			free(p->user_actions[action].command);
-		}
-	}
-
-	p->actions_count = 0;
-	p->user_actions_count = 0;
-
-	bzero(p->sounds, MAX_NOTIFIES * sizeof(struct _xneur_notify));
-	bzero(p->osds, MAX_NOTIFIES * sizeof(struct _xneur_notify));
-	bzero(p->popups, MAX_NOTIFIES * sizeof(struct _xneur_notify));
-
-
-	free(p->version);
-	free(p->osd_font);
-	//free(p->actions);
-	//free(p->user_actions);
-}
-
 static pid_t xneur_config_set_pid(struct _xneur_config *p, pid_t process_id)
 {
 	// Set lock file to ~/.xneur/.cache/lock
@@ -1729,14 +1676,46 @@ static void xneur_config_uninit(struct _xneur_config *p)
 	if (p == NULL)
 		return;
 
-	free_structures(p);
+	p->manual_apps->uninit(p->manual_apps);
+	p->auto_apps->uninit(p->auto_apps);
+	p->layout_remember_apps->uninit(p->layout_remember_apps);
+	p->excluded_apps->uninit(p->excluded_apps);
+	p->autocompletion_excluded_apps->uninit(p->autocompletion_excluded_apps);
+	p->dont_send_key_release_apps->uninit(p->dont_send_key_release_apps);
+	p->delay_send_key_apps->uninit(p->delay_send_key_apps);
+	p->abbreviations->uninit(p->abbreviations);
 
-	free(p->actions);
-	free(p->user_actions);
+	p->plugins->uninit(p->plugins);
 
+	for (int notify = 0; notify < MAX_NOTIFIES; notify++)
+	{
+		free(p->sounds[notify].file);
+		free(p->osds[notify].file);
+		free(p->popups[notify].file);
+	}
 	free(p->sounds);
 	free(p->osds);
 	free(p->popups);
+
+	for (int action = 0; action < p->actions_count; action++)
+	{
+		free(p->actions[action].hotkey.key);
+	}
+	free(p->actions);
+	p->actions_count = 0;
+
+	for (int action = 0; action < p->user_actions_count; action++)
+	{
+		free(p->user_actions[action].hotkey.key);
+		free(p->user_actions[action].name);
+		free(p->user_actions[action].command);
+	}
+	free(p->user_actions);
+	p->user_actions_count = 0;
+
+
+	free(p->version);
+	free(p->osd_font);
 
 	free(p->delimeters);
 	free(p->delimeters_string);

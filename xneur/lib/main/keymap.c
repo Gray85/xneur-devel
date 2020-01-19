@@ -38,8 +38,8 @@
 
 #include "keymap.h"
 
-#define keycode_to_symbol_cache_size 64
-#define symbol_to_keycode_cache_size 64
+#define KEYCODE_TO_SYMBOL_CACHE_SIZE 64
+#define SYMBOL_TO_KEYCODE_CACHE_SIZE 64
 
 struct symbol_to_keycode_pair
 {
@@ -135,7 +135,7 @@ static char* keymap_keycode_to_symbol(struct _keymap *p, KeyCode kc, int group, 
 	struct keycode_to_symbol_pair *pr = NULL;
 
 	/* Look up cache. */
-	for (int i = 0; i < keycode_to_symbol_cache_size; i++) {
+	for (int i = 0; i < KEYCODE_TO_SYMBOL_CACHE_SIZE; i++) {
 		pr = p->keycode_to_symbol_cache + i;
 		if (pr->symbol && pr->kc == kc && pr->group == group && pr->state == state)
 			goto ret;
@@ -147,7 +147,7 @@ static char* keymap_keycode_to_symbol(struct _keymap *p, KeyCode kc, int group, 
 	char *symbol = keymap_keycode_to_symbol_real(p, kc, group >= 0 ? (state | get_keycode_mod(group)) : state);
 
 	/* Just use next cache entry. LRU makes no sense here. */
-	p->keycode_to_symbol_cache_pos = (p->keycode_to_symbol_cache_pos + 1) % keycode_to_symbol_cache_size;
+	p->keycode_to_symbol_cache_pos = (p->keycode_to_symbol_cache_pos + 1) % KEYCODE_TO_SYMBOL_CACHE_SIZE;
 
 	pr = p->keycode_to_symbol_cache + p->keycode_to_symbol_cache_pos;
 
@@ -297,7 +297,7 @@ static char keymap_get_ascii(struct _keymap *p, struct _xneur_handle *handle, co
 
 	/* Look up cache */
 
-	for (int i = 0; i < symbol_to_keycode_cache_size; i++) {
+	for (int i = 0; i < SYMBOL_TO_KEYCODE_CACHE_SIZE; i++) {
 		pr = p->symbol_to_keycode_cache + i;
 		if (pr->symbol &&
 		    pr->symbol_size <= sym_size &&
@@ -315,7 +315,7 @@ static char keymap_get_ascii(struct _keymap *p, struct _xneur_handle *handle, co
 		return ascii; // Return empty
 	}
 
-	p->symbol_to_keycode_cache_pos = (p->symbol_to_keycode_cache_pos + 1) % symbol_to_keycode_cache_size;
+	p->symbol_to_keycode_cache_pos = (p->symbol_to_keycode_cache_pos + 1) % SYMBOL_TO_KEYCODE_CACHE_SIZE;
 
 	pr = p->symbol_to_keycode_cache + p->symbol_to_keycode_cache_pos;
 
@@ -420,34 +420,21 @@ static void get_offending_modifiers (struct _keymap *p)
 		XFreeModifiermap (modmap);
 }
 
-static void keymap_purge_caches(struct _keymap *p)
-{
-	for (int i = 0; i < keycode_to_symbol_cache_size; i++)
-	{
-		struct keycode_to_symbol_pair* pr = p->keycode_to_symbol_cache + i;
-		free(pr->symbol);
-		pr->symbol = NULL;
-		pr->symbol_size = 0;
-	}
-
-	for (int i = 0; i < symbol_to_keycode_cache_size; i++)
-	{
-		struct symbol_to_keycode_pair* pr = p->symbol_to_keycode_cache + i;
-		free(pr->symbol);
-		pr->symbol = NULL;
-		pr->symbol_size = 0;
-	}
-
-}
-
 static void keymap_uninit(struct _keymap *p)
 {
-	keymap_purge_caches(p);
-
 	if (p->keymap != NULL)
 		XFree(p->keymap);
 
+	for (int i = 0; i < KEYCODE_TO_SYMBOL_CACHE_SIZE; i++)
+	{
+		free(p->keycode_to_symbol_cache[i].symbol);
+	}
 	free(p->keycode_to_symbol_cache);
+
+	for (int i = 0; i < SYMBOL_TO_KEYCODE_CACHE_SIZE; i++)
+	{
+		free(p->symbol_to_keycode_cache[i].symbol);
+	}
 	free(p->symbol_to_keycode_cache);
 
 	free(p);
@@ -479,8 +466,8 @@ struct _keymap* keymap_init(struct _xneur_handle *handle, Display *display)
 	p->keysyms_per_keycode = keysyms_per_keycode;
 
 
-	p->keycode_to_symbol_cache = (struct keycode_to_symbol_pair *)calloc(keycode_to_symbol_cache_size, sizeof(struct keycode_to_symbol_pair));
-	p->symbol_to_keycode_cache = (struct symbol_to_keycode_pair *)calloc(symbol_to_keycode_cache_size, sizeof(struct symbol_to_keycode_pair));
+	p->keycode_to_symbol_cache = (struct keycode_to_symbol_pair *)calloc(KEYCODE_TO_SYMBOL_CACHE_SIZE, sizeof(struct keycode_to_symbol_pair));
+	p->symbol_to_keycode_cache = (struct symbol_to_keycode_pair *)calloc(SYMBOL_TO_KEYCODE_CACHE_SIZE, sizeof(struct symbol_to_keycode_pair));
 	p->keycode_to_symbol_cache_pos = 0;
 	p->symbol_to_keycode_cache_pos = 0;
 
@@ -507,5 +494,3 @@ struct _keymap* keymap_init(struct _xneur_handle *handle, Display *display)
 
 	return p;
 }
-
-
