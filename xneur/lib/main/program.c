@@ -290,15 +290,8 @@ static void program_layout_update(struct _program *p, int layout, Window old_win
 	if (old_window == new_window)
 		return;
 
-	char *text_to_find	= (char *) malloc(1024 * sizeof(char));
-	if (text_to_find == NULL)
-		return;
-	char *window_layout	= (char *) malloc(1024 * sizeof(char));
-	if (window_layout == NULL)
-	{
-		free(text_to_find);
-		return;
-	}
+	char text_to_find[1024];
+	char window_layout[1024];
 
 	fetch_window_name(text_to_find, old_window);
 	// Remove layout for old window
@@ -325,17 +318,11 @@ static void program_layout_update(struct _program *p, int layout, Window old_win
 		if (!p->window_layouts->exist(p->window_layouts, window_layout, BY_PLAIN))
 			continue;
 
-		free(text_to_find);
-		free(window_layout);
-
 		//XkbLockGroup(main_window->display, XkbUseCoreKbd, lang);
 		set_keyboard_group(main_window->display, lang);
 		log_message(DEBUG, _("Restore layout group to %d"), lang);
 		return;
 	}
-
-	free(text_to_find);
-	free(window_layout);
 
 	log_message(DEBUG, _("Store default layout group to %d"), xconfig->default_group);
 }
@@ -1306,10 +1293,8 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 			if (loctime == NULL)
 				break;
 
-			char *date = malloc(256 * sizeof(char));
-			if (date == NULL)
-				break;
-			strftime(date, 256, "%x", loctime);
+			char date[32];
+			strftime(date, sizeof(date)/sizeof(date[0]), "%x", loctime);
 
 			// Insert Date
 			log_message(DEBUG, _("Insert date '%s'."), date);
@@ -1322,8 +1307,6 @@ static int program_perform_action(struct _program *p, enum _hotkey_action action
 			p->correction_buffer->clear(p->correction_buffer, p->handle);
 
 			p->event->default_event.xkey.keycode = 0;
-
-			free (date);
 			break;
 		}
 		case ACTION_REPLACE_ABBREVIATION: // User needs to replace acronym

@@ -213,7 +213,6 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 		return *sym;
 	}
 
-	char *symbol		= (char *) malloc((256 + 1) * sizeof(char));
 	// Symbols, that has text in one language, but do not have in `p->latin_group`
 	char *no_text_in_latin_lang = (char *) malloc((256 + 1) * sizeof(char));
 
@@ -250,7 +249,8 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 						event.keycode     = keycode;
 
 						event.state = get_keycode_mod(lang) | mask;
-						int nbytes = XLookupString(&event, symbol, 256, NULL, NULL);
+						char symbol[256 + 1];
+						int nbytes = XLookupString(&event, symbol, sizeof(symbol)/sizeof(symbol[0]) - 1, NULL, NULL);
 						if (nbytes <= 0)
 							continue;
 
@@ -264,19 +264,16 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 						strcat(no_text_in_latin_lang, symbol);
 
 						event.state = get_keycode_mod(p->latin_group) | mask;
-						if (XLookupString(&event, symbol, 256, NULL, NULL) <= 0) {
+						if (XLookupString(&event, symbol, sizeof(symbol)/sizeof(symbol[0]) - 1, NULL, NULL) <= 0) {
 							continue;
 						}
 
-						char sym = symbol[0];
-
 						free(no_text_in_latin_lang);
-						free(symbol);
 						*kc = keycode;
 						*modifier = get_keycode_mod(lang) | mask;
 						*symbol_len = nbytes;
 						*preferred_lang = lang;
-						return sym;
+						return symbol[0];
 					}
 				}
 			}
@@ -286,7 +283,6 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 	}
 
 	free(no_text_in_latin_lang);
-	free(symbol);
 	return NULLSYM;
 }
 
@@ -360,21 +356,12 @@ static char keymap_get_cur_ascii_char(struct _keymap *p, XEvent *e)
 	if (ke->state & LockMask)
 		mod = LockMask;
 
-	char *symbol = (char *) malloc((256 + 1) * sizeof(char));
-
 	ke->state = get_keycode_mod(p->latin_group);
 	ke->state |= mod;
 
-	int nbytes = XLookupString(ke, symbol, 256, NULL, NULL);
-	if (nbytes > 0)
-	{
-		char sym = symbol[0];
-		free(symbol);
-		return sym;
-	}
-
-	free(symbol);
-	return ' ';
+	char symbol[256 + 1];
+	int nbytes = XLookupString(ke, symbol, sizeof(symbol)/sizeof(symbol[0]) - 1, NULL, NULL);
+	return nbytes > 0 ? symbol[0] : ' ';
 }
 
 static void keymap_convert_text_to_ascii(struct _keymap *p, struct _xneur_handle *handle, char *text, KeyCode *kc, int *kc_mod)
