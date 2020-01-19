@@ -127,8 +127,7 @@ static void bind_action(struct _window* window, struct _xneur_action* actions, e
 		log_message(ERROR, _("      KeySym (or with Shift modifier) is undefined!"), _(normal_action_names[action]), key);
 
 	}
-	if (key != NULL)
-		free(key);
+	free(key);
 }
 
 static void bind_user_action(struct _window* window, struct _xneur_user_action* actions, int action)
@@ -167,8 +166,7 @@ static void bind_user_action(struct _window* window, struct _xneur_user_action* 
 		log_message(ERROR, _("      KeySym (or with Shift modifier) is undefined!"));
 
 	}
-	if (key != NULL)
-		free(key);
+	free(key);
 }
 
 enum _hotkey_action get_action(Display* display, int actions_count, KeySym key_sym, int mask)
@@ -228,8 +226,7 @@ void bind_actions(struct _window* window, struct _xneur_config* config)
 
 void unbind_actions(void)
 {
-	if (btable != NULL)
-		free(btable);
+	free(btable);
 	btable = NULL;
 }
 
@@ -289,7 +286,6 @@ void bind_user_actions(struct _window* window, struct _xneur_config* config)
 
 void unbind_user_actions(void)
 {
-	if (ubtable != NULL)
-		free(ubtable);
+	free(ubtable);
 	ubtable = NULL;
 }

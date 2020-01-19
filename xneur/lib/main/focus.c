@@ -138,8 +138,7 @@ static int focus_get_focus_status(struct _focus *p, Display* display, struct _xn
 	Window old_window = p->owner_window;
 	if (new_window == old_window)
 	{
-		if (new_app_name != NULL)
-			free(new_app_name);
+		free(new_app_name);
 		if (config->troubleshoot_full_screen)
 		{
 			Window root_return;
@@ -198,8 +197,7 @@ static int focus_get_focus_status(struct _focus *p, Display* display, struct _xn
 
 	log_message(DEBUG, _("Process new window (ID %d) with name '%s' (status %s, mode %s)"), new_window, new_app_name, _(verbose_focus_status[*excluded]), _(verbose_forced_mode[*forced_mode]));
 
-	if (new_app_name != NULL)
-		free(new_app_name);
+	free(new_app_name);
 	return TRUE;
 }
 
@@ -293,8 +291,7 @@ static void focus_click_key(struct _focus *p, Display* display, struct _xneur_co
 
 static void focus_uninit(struct _focus *p)
 {
-	if (p != NULL)
-		free(p);
+	free(p);
 
 	log_message(DEBUG, _("Focus is freed"));
 }
