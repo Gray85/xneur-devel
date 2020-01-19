@@ -1693,9 +1693,6 @@ static void xneur_config_uninit(struct _xneur_config *p)
 		free(p->osds[notify].file);
 		free(p->popups[notify].file);
 	}
-	free(p->sounds);
-	free(p->osds);
-	free(p->popups);
 
 	for (int action = 0; action < p->actions_count; action++)
 	{
@@ -1739,15 +1736,6 @@ struct _xneur_config* xneur_config_init(void)
 	p->delimeters[p->delimeters_count] = XK_space;
 	p->delimeters_string[p->delimeters_count] = '\0';
 	p->delimeters_count++;
-
-	p->sounds = (struct _xneur_notify *) malloc(MAX_NOTIFIES * sizeof(struct _xneur_notify));
-	bzero(p->sounds, MAX_NOTIFIES * sizeof(struct _xneur_notify));
-
-	p->osds = (struct _xneur_notify *) malloc(MAX_NOTIFIES * sizeof(struct _xneur_notify));
-	bzero(p->osds, MAX_NOTIFIES * sizeof(struct _xneur_notify));
-
-	p->popups = (struct _xneur_notify *) malloc(MAX_NOTIFIES * sizeof(struct _xneur_notify));
-	bzero(p->popups, MAX_NOTIFIES * sizeof(struct _xneur_notify));
 
 	p->mail_keyboard_log = NULL;
 	p->host_keyboard_log = NULL;

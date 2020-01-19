@@ -29,9 +29,6 @@
 #define CACHEDIR			".cache"
 #define LOCK_NAME			"lock"
 
-#define MAX_NOTIFIES		37
-#define MAX_HOTKEYS			23
-
 #include <sys/types.h>
 #define XK_PUBLISHING
 #include <X11/XKBlib.h>
@@ -98,6 +95,8 @@ enum _notify_action
 	NOTIFY_CORR_MISPRINT,
 	NOTIFY_EXEC_USER_ACTION,
 	NOTIFY_NONE = 36,
+
+	MAX_NOTIFIES,
 };
 
 enum _hotkey_action
@@ -126,6 +125,8 @@ enum _hotkey_action
 	ACTION_ROTATE_AUTOCOMPLETION,
 	ACTION_INSERT_DATE,
 	ACTION_NONE=23,
+
+	MAX_HOTKEYS = ACTION_NONE,
 };
 
 enum _change_action
@@ -203,9 +204,9 @@ struct _xneur_config
 	struct _list_char *abbreviations;
 	struct _list_char *plugins;
 
-	struct _xneur_notify *sounds;			// Array of sounds for actions
-	struct _xneur_notify *osds;			// Array of OSDs for actions
-	struct _xneur_notify *popups;			// Array of popups for actions
+	struct _xneur_notify sounds[MAX_NOTIFIES];			// Array of sounds for actions
+	struct _xneur_notify osds[MAX_NOTIFIES];			// Array of OSDs for actions
+	struct _xneur_notify popups[MAX_NOTIFIES];			// Array of popups for actions
 
 	struct _xneur_action *actions;			// Array of hotkeys used in program
 	int actions_count;				// Count of hotkeys
