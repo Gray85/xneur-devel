@@ -214,16 +214,6 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 		return *sym;
 	}
 
-	XKeyEvent event;
-	event.type        = KeyPress;
-	event.root        = RootWindow(p->display, DefaultScreen(p->display));
-	event.subwindow   = None;
-	event.same_screen = True;
-	event.display     = p->display;
-	event.state       = 0;
-	event.keycode     = XKeysymToKeycode(p->display, XK_space);
-	event.time        = CurrentTime;
-
 	char *symbol		= (char *) malloc((256 + 1) * sizeof(char));
 	char *prev_symbols	= (char *) malloc((256 + 1) * sizeof(char));
 
@@ -238,7 +228,7 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 			lang--;
 
 		KeySym *keymap = p->keymap;
-		for (int i = p->min_keycode; i <= p->max_keycode; i++)
+		for (int keycode = p->min_keycode; keycode <= p->max_keycode; keycode++)
 		{
 			int max = p->keysyms_per_keycode - 1;
 			while (max >= 0 && keymap[max] == NoSymbol)
@@ -256,7 +246,14 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 					for (int m = 0; m < 3; m++) // Modifiers
 					{
 						int mask = STATE_MASKS[n] | STATE_MASKS[m];
-						event.keycode	= i;
+						XKeyEvent event;
+						event.type        = KeyPress;
+						event.root        = RootWindow(p->display, DefaultScreen(p->display));
+						event.subwindow   = None;
+						event.same_screen = True;
+						event.display     = p->display;
+						event.time        = CurrentTime;
+						event.keycode     = keycode;
 
 						event.state = get_keycode_mod(lang) | mask;
 						int nbytes = XLookupString(&event, symbol, 256, NULL, NULL);
@@ -269,23 +266,21 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 							continue;
 						strcat(prev_symbols, symbol);
 
-						if (strncmp(sym, symbol, strlen(symbol)) != 0)
+						if (strncmp(sym, symbol, nbytes) != 0)
 							continue;
-
-						size_t _symbol_len = strlen(symbol);
 
 						event.state = get_keycode_mod(p->latin_group) | mask;
-						nbytes = XLookupString(&event, symbol, 256, NULL, NULL);
-						if (nbytes <= 0)
+						if (XLookupString(&event, symbol, 256, NULL, NULL) <= 0) {
 							continue;
+						}
 
 						char sym = symbol[0];
 
 						free(prev_symbols);
 						free(symbol);
-						*kc = event.keycode;
+						*kc = keycode;
 						*modifier = get_keycode_mod(lang) | mask;
-						*symbol_len = _symbol_len;
+						*symbol_len = nbytes;
 						*preferred_lang = lang;
 						return sym;
 					}
