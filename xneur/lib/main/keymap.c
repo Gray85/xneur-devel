@@ -217,34 +217,28 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 	char *symbol		= (char *) malloc((256 + 1) * sizeof(char));
 	char *prev_symbols	= (char *) malloc((256 + 1) * sizeof(char));
 
-	int _preferred_lang = *preferred_lang;
-
-	for (int _lang = 0; _lang < handle->total_languages; _lang++)
-	{
-		int lang = _lang;
-		if (lang == 0)
-			lang = _preferred_lang;
-		else if (lang <= _preferred_lang)
-			lang--;
-
+	int count = handle->total_languages;
+	int lang = *preferred_lang;
+	// Loop through all languages, starting from `preferred_lang`
+	while (count-- > 0) {
 		KeySym *keymap = p->keymap;
 		for (int keycode = p->min_keycode; keycode <= p->max_keycode; keycode++)
 		{
-			int max = p->keysyms_per_keycode - 1;
-			while (max >= 0 && keymap[max] == NoSymbol)
-				max--;
-
 			prev_symbols[0] = NULLSYM;
 
-			for (int j = 0; j <= max; j++)
+			// Loop through all keysyms on the physical key
+			for (int j = 0; j <= p->keysyms_per_keycode; j++)
 			{
 				if (keymap[j] == NoSymbol)
 					continue;
 
+				// Check all modifier pairs
 				for (int n = 0; n < 3; n++)
 				{
 					for (int m = 0; m < 3; m++) // Modifiers
 					{
+						if (n == m) continue;
+
 						int mask = STATE_MASKS[n] | STATE_MASKS[m];
 						XKeyEvent event;
 						event.type        = KeyPress;
@@ -288,6 +282,7 @@ static char keymap_get_ascii_real(struct _keymap *p, struct _xneur_handle *handl
 			}
 			keymap += p->keysyms_per_keycode;
 		}
+		lang = (lang + 1) % handle->total_languages;
 	}
 
 	free(prev_symbols);
